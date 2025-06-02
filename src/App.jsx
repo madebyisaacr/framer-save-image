@@ -432,12 +432,13 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
                 </div>
                 {!isLastRow && <div className="absolute inset-x-3 bottom-0 h-px bg-divider" />}
             </td>
-            {columns.map(columnName => (
-                <td>
+            {columns.map((columnName, columnIndex) => (
+                <td key={`${row.id}-${columnName}-${columnIndex}`}>
                     <div className="flex-row gap-2 pr-3 flex-wrap max-w-[245px] py-[14px]">
                         {Array.isArray(row.columns?.[columnName])
                             ? row.columns[columnName].map((image, index) => (
                                   <div
+                                      key={`${row.id}-${image ? image.id : "empty"}-${index}`}
                                       className={classNames("flex-col center shrink-0 w-10", image && "cursor-pointer")}
                                       ref={el => (imageElements.current[index] = el)}
                                       onClick={() => changeActiveImage(image, imageElements.current[index], row.id)}
