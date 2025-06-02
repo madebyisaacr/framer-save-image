@@ -258,6 +258,18 @@ function CollectionTable() {
                 />
             ) : (
                 <div className="flex-col pt-6 pb-10 center gap-1 px-3 w-full flex-1 text-center text-balance">
+                    <div className="size-[22px] relative flex center bg-tint rounded-[4px] mb-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" className="text-reversed">
+                            <path
+                                d="M 10.838 9.29 C 10.444 8.683 9.556 8.683 9.162 9.29 L 4.504 16.455 C 4.072 17.12 4.549 18 5.343 18 L 14.657 18 C 15.451 18 15.928 17.12 15.496 16.455 Z"
+                                fill="currentColor"
+                            ></path>
+                            <path
+                                d="M 16 4 C 17.105 4 18 4.895 18 6 C 18 7.105 17.105 8 16 8 C 14.895 8 14 7.105 14 6 C 14 4.895 14.895 4 16 4 Z"
+                                fill="currentColor"
+                            ></path>
+                        </svg>
+                    </div>
                     <span className="text-primary font-semibold">No image fields found</span>
                     <span className="text-tertiary">This collection doesn't have any image fields.</span>
                     {collectionFields.some(field => field.type === "unsupported") && (
@@ -638,12 +650,7 @@ function useImage() {
 
 function Icon({ type = "image", active = false }) {
     return (
-        <div
-            className={classNames(
-                "group-hover:text-primary shrink-0",
-                active ? "text-primary" : "text-tertiary"
-            )}
-        >
+        <div className={classNames("group-hover:text-primary shrink-0", active ? "text-primary" : "text-tertiary")}>
             {type === "page" ? (
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12">
                     <path
