@@ -239,7 +239,7 @@ function CollectionTable() {
             )}
             {isLoading ? (
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                    <div className="framer-spinner" />
+                    <Spinner />
                 </div>
             ) : columns.length > 0 ? (
                 <Table
@@ -475,10 +475,16 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
 }
 
 function ImageButtons({ image, onButtonClick = null }) {
+    const [isDownloading, setIsDownloading] = useState(false)
+    const [isCopying, setIsCopying] = useState(false)
+    const [isCopyingUrl, setIsCopyingUrl] = useState(false)
+
     const hasImage = image ? true : false
 
     async function onCopyImageClick() {
         if (!image) return
+
+        setIsCopying(true)
 
         // Fetch the image as a blob
         const response = await fetch(image.url)
@@ -496,11 +502,15 @@ function ImageButtons({ image, onButtonClick = null }) {
             framer.notify("Failed to copy image", { variant: "error" })
         }
 
+        setIsCopying(false)
+
         if (onButtonClick) onButtonClick()
     }
 
     function onCopyImageUrlClick() {
         if (!image) return
+
+        setIsCopyingUrl(true)
 
         const success = copyToClipboard(image.url)
         if (success) {
@@ -509,11 +519,15 @@ function ImageButtons({ image, onButtonClick = null }) {
             framer.notify("Failed to copy image URL", { variant: "error" })
         }
 
+        setIsCopyingUrl(false)
+
         if (onButtonClick) onButtonClick()
     }
 
     function onDownloadImageClick() {
         if (!image) return
+
+        setIsDownloading(true)
 
         const success = downloadFile(image.url, image.id)
         if (success) {
@@ -522,6 +536,8 @@ function ImageButtons({ image, onButtonClick = null }) {
             framer.notify("Failed to download image", { variant: "error" })
         }
 
+        setIsDownloading(false)
+
         if (onButtonClick) onButtonClick()
     }
 
@@ -529,14 +545,14 @@ function ImageButtons({ image, onButtonClick = null }) {
         <div className={classNames("flex-col gap-2 w-full", !hasImage && "opacity-50 pointer-events-none")}>
             <div className="flex-row gap-2 flex-1">
                 <button onClick={onCopyImageClick} className="flex-1">
-                    Copy Image
+                    {isCopying ? <Spinner /> : "Copy Image"}
                 </button>
                 <button onClick={onCopyImageUrlClick} className="flex-1">
-                    Copy URL
+                    {isCopyingUrl ? <Spinner /> : "Copy URL"}
                 </button>
             </div>
             <button onClick={onDownloadImageClick} className="framer-button-primary">
-                Download
+                {isDownloading ? <Spinner /> : "Download"}
             </button>
         </div>
     )
@@ -598,4 +614,8 @@ function Icon({ type = "image", active = false }) {
             )}
         </div>
     )
+}
+
+function Spinner() {
+    return <div className="framer-spinner" />
 }
