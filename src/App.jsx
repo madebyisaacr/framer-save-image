@@ -343,6 +343,22 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
         })
     }, [row, columns, activeImage])
 
+    const handleTitleClick = () => {
+        // Find the first column that has images
+        for (const columnName of columns) {
+            const images = row.columns?.[columnName]
+            if (Array.isArray(images) && images.length > 0) {
+                // Get the first image and its corresponding element
+                const firstImage = images[0]
+                const elementIndex = imageElements.current.findIndex(el => el !== null)
+                if (elementIndex !== -1) {
+                    changeActiveImage(firstImage, imageElements.current[elementIndex], row.id)
+                }
+                break
+            }
+        }
+    }
+
     return (
         <tr
             className={classNames(
@@ -355,6 +371,7 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
                     "text-nowrap px-3 items-center",
                     isCollectionMode ? "min-w-[250px] max-w-[300px]" : "max-w-[200px]"
                 )}
+                onClick={handleTitleClick}
             >
                 <div className="flex-row gap-2.5 items-center overflow-hidden">
                     <Icon type={row.type} active={includesActiveImage} />
