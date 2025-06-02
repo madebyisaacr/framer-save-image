@@ -1,9 +1,61 @@
 import { framer, isFrameNode, isComponentInstanceNode, isImageAsset } from "framer-plugin"
-import { useState, useEffect, useMemo, useRef } from "react"
+import { useState, useEffect, useMemo, useRef, memo, useDeferredValue } from "react"
 import "./App.css"
 import { copyToClipboard, downloadFile } from "./utils"
 import { useDynamicPluginHeight } from "./useDynamicPluginHeight"
 import classNames from "classnames"
+
+const sidePadding = 0
+const columnGap = 10
+const minColumnWidth = 110
+
+function useImageDimensions(images) {
+    const [dimensions, setDimensions] = useState({})
+
+    useEffect(() => {
+        let isMounted = true
+        const newDimensions = {}
+
+        const promises = images.map(image => {
+            return new Promise(resolve => {
+                if (image && image.width && image.height) {
+                    newDimensions[image.id] = { width: image.width, height: image.height }
+                    resolve()
+                } else if (image && image.url) {
+                    const img = new window.Image()
+                    img.onload = () => {
+                        newDimensions[image.id] = { width: img.naturalWidth, height: img.naturalHeight }
+                        resolve()
+                    }
+                    img.onerror = () => resolve()
+                    img.src = image.url
+                } else {
+                    resolve()
+                }
+            })
+        })
+
+        Promise.all(promises).then(() => {
+            if (isMounted) setDimensions(newDimensions)
+        })
+
+        return () => {
+            isMounted = false
+        }
+    }, [images])
+
+    return dimensions
+}
+
+function calculateImageHeight(image, columnWidth, dimensions) {
+    const dim = dimensions[image.id]
+    if (dim && dim.width && dim.height) {
+        return (columnWidth * dim.height) / dim.width
+    }
+    // fallback
+    const defaultAspectRatio = 4 / 3
+    return columnWidth / defaultAspectRatio
+}
 
 export function App() {
     return framer.mode === "collection" ? <CollectionView /> : <CanvasView />
@@ -12,11 +64,25 @@ export function App() {
 function CanvasView() {
     const selection = useSelection()
     const image = useImage()
+    const scrollRef = useRef(null)
+    const [windowSize, setWindowSize] = useState(window.innerWidth)
+    const deferredWindowSize = useDeferredValue(windowSize)
+    const [selectedImageId, setSelectedImageId] = useState(null)
 
     useDynamicPluginHeight({
         position: "top right",
         width: framer.mode === "editImage" ? 400 : 260,
     })
+
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowSize(window.innerWidth)
+        }
+
+        handleResize()
+        window.addEventListener("resize", handleResize)
+        return () => window.removeEventListener("resize", handleResize)
+    }, [])
 
     const images = useMemo(() => {
         if (framer.mode === "editImage") {
@@ -52,15 +118,68 @@ function CanvasView() {
         }
     }, [selection])
 
+    const selectedImage = useMemo(() => {
+        const image = images.find(image => image.id === selectedImageId)
+        if (!image) {
+            const firstImage = images[0]
+            setSelectedImageId(firstImage?.id ?? null)
+            return firstImage
+        }
+        return image
+    }, [images, selectedImageId])
+
+    const dimensions = useImageDimensions(images)
+
+    const [imageColumns, columnWidth] = useMemo(() => {
+        const adjustedWindowSize = deferredWindowSize - sidePadding
+        const columnCount = Math.max(1, Math.floor((adjustedWindowSize + columnGap) / (minColumnWidth + columnGap)))
+        const columnWidth = minColumnWidth
+        const heightPerColumn = Array(columnCount).fill(0)
+
+        const columns = Array.from({ length: columnCount }, () => [])
+
+        if (!images.length) return [columns, columnWidth]
+
+        for (const img of images) {
+            const itemHeight = calculateImageHeight(img, columnWidth, dimensions)
+            const minColumnIndex = heightPerColumn.indexOf(Math.min(...heightPerColumn))
+            columns[minColumnIndex].push(img)
+            heightPerColumn[minColumnIndex] += itemHeight
+        }
+
+        return [columns, columnWidth]
+    }, [images, deferredWindowSize, dimensions])
+
     return (
-        <main className="flex-col px-3 pb-3 gap-2 w-full overflow-hidden select-none">
+        <main className="flex-col px-3 gap-3 w-full overflow-hidden select-none">
             {images.length === 1 ? (
                 <ImageItem image={images[0]} />
             ) : images.length > 0 ? (
-                <div className="grid grid-cols-2 gap-2 w-full overflow-y-auto">
-                    {images.map(image => (
-                        <ImageItem key={image.id} image={image} />
-                    ))}
+                <div ref={scrollRef} className="relative flex-1 rounded pt-3">
+                    <div className="absolute inset-x-0 top-0 h-px bg-divider" />
+                    <div className="relative">
+                        <div className="flex gap-2">
+                            {imageColumns.map((columnImages, i) => (
+                                <div
+                                    key={`column-${i}`}
+                                    className="flex-shrink-0 flex flex-col gap-2"
+                                    style={{ width: columnWidth }}
+                                >
+                                    {columnImages.map(image => (
+                                        <ImageItem
+                                            key={image.id}
+                                            image={image}
+                                            height={calculateImageHeight(image, columnWidth, dimensions)}
+                                            selected={selectedImageId === image.id}
+                                            onClick={() =>
+                                                setSelectedImageId(selectedImageId === image.id ? null : image.id)
+                                            }
+                                        />
+                                    ))}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             ) : (
                 <span className="w-full overflow-hidden bg-tertiary dark:bg-secondary rounded flex center relative text-secondary aspect-video flex-col center gap-2">
@@ -80,18 +199,34 @@ function CanvasView() {
                     Select an image
                 </span>
             )}
-            <ImageButtons image={image} />
+            <div className="flex-col gap-3 py-3 sticky bottom-0 bg-primary">
+                <div className="absolute inset-x-0 top-0 h-px bg-divider" />
+                <ImageButtons image={selectedImage} />
+            </div>
         </main>
     )
 }
 
-function ImageItem({ image }) {
+function ImageItem({ image, height, selected = false, onClick = null }) {
     return (
-        <div className="w-full overflow-hidden bg-tertiary dark:bg-secondary rounded flex center relative">
+        <div
+            className={classNames(
+                "w-full bg-tertiary dark:bg-secondary rounded flex center relative",
+                onClick && "cursor-pointer"
+            )}
+            style={{ height: height ? `${height}px` : undefined }}
+            onClick={onClick}
+        >
+            {selected && (
+                <div className="absolute -inset-[4px] border-2 border-tint rounded-[12px]">
+                    <div className="bg-tint rounded-[inherit] absolute inset-0 opacity-15" />
+                </div>
+            )}
             <img
                 src={`${image.url}?scale-down-to=512`}
                 alt={image.altText}
-                className="w-full object-contain max-h-[400px] min-h-10"
+                className="w-full h-full object-contain relative rounded-[inherit]"
+                style={{ maxHeight: height ? `${height}px` : "400px", minHeight: "10px" }}
                 draggable={false}
             />
             <div className="absolute inset-0 border border-image-border rounded-[inherit]" />
@@ -324,7 +459,7 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
 
             framer.showUI({
                 position: "top right",
-                width: Math.max(Math.min(elementRef.current.offsetWidth, 600), 260),
+                width: Math.max(Math.min(elementRef.current.offsetWidth, 600), 280),
                 height: Math.max(Math.min(elementRef.current.offsetHeight, 500), 158),
             })
         }
