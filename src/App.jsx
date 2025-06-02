@@ -434,33 +434,30 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
     return (
         <tr
             className={classNames(
-                "h-10 text-secondary group hover:text-primary font-medium px-3 relative",
+                "text-secondary group hover:text-primary font-medium px-3 relative",
                 includesActiveImage && "text-primary bg-[#FCFCFC] dark:bg-[#161616]"
             )}
         >
             <td
                 className={classNames(
-                    "text-nowrap px-3 items-center cursor-pointer",
+                    "text-nowrap px-3 cursor-pointer flex flex-col items-start",
                     isCollectionMode ? "min-w-[250px] max-w-[300px]" : "max-w-[200px]"
                 )}
                 onClick={handleTitleClick}
             >
-                <div className="flex-row gap-2.5 items-center overflow-hidden">
+                <div className="flex-row gap-2.5 items-center overflow-hidden h-10">
                     <Icon type={row.type} active={includesActiveImage} />
                     <span className="truncate">{row.title}</span>
                 </div>
                 {!isLastRow && <div className="absolute inset-x-3 bottom-0 h-px bg-divider" />}
             </td>
-            {columns.map((columnName, columnIndex) => (
+            {columns.map(columnName => (
                 <td>
-                    <div className="flex-row gap-2 h-10 pr-3">
+                    <div className="flex-row gap-2 pr-3 flex-wrap max-w-[245px] py-[14px]">
                         {Array.isArray(row.columns?.[columnName])
                             ? row.columns[columnName].map((image, index) => (
                                   <div
-                                      className={classNames(
-                                          "flex-col center h-full shrink-0 w-10",
-                                          image && "cursor-pointer"
-                                      )}
+                                      className={classNames("flex-col center shrink-0 w-10", image && "cursor-pointer")}
                                       ref={el => (imageElements.current[index] = el)}
                                       onClick={() => changeActiveImage(image, imageElements.current[index], row.id)}
                                   >
