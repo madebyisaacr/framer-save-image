@@ -1,8 +1,6 @@
 {
-  "id": "c1039a",
-  "name": "Save Image",
-  "modes": [
-    "canvas"
-  ],
-  "icon": "/icon.svg"
+    "id": "c1039a",
+    "name": "Save Image",
+    "modes": ["canvas", "editImage", "collection"],
+    "icon": "/icon.svg"
 }
