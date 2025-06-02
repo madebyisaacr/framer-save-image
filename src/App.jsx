@@ -53,7 +53,9 @@ export function App() {
     ) : singleImage ? (
         <SingleImageView image={singleImage} />
     ) : rows.length > 0 ? (
-        <Table rows={rows} columns={["Images"]} titleColumnName="Name" />
+        <div className="flex-col max-h-[500px]">
+            <Table rows={rows} columns={["Images"]} titleColumnName="Name" />
+        </div>
     ) : (
         <SingleImageView />
     )
