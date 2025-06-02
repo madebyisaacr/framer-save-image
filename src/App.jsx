@@ -194,7 +194,7 @@ function CollectionTable() {
     return (
         <div
             ref={ref}
-            className={classNames("flex-col", isLoading || columns.length === 0 ? "w-full size-full" : "min-w-max")}
+            className={classNames("flex-col", isLoading || columns.length === 0 ? "w-full size-full" : "w-max")}
         >
             {collections.length > 1 && (
                 <div className="flex-col px-3 pb-3">
@@ -322,8 +322,8 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
     }, [activeImage])
 
     return (
-        <div ref={ref} className="overflow-auto flex-col select-none relative min-w-max">
-            <div className="flex-col pb-3 min-w-max">
+        <div ref={ref} className="overflow-auto flex-col select-none relative w-max">
+            <div className="flex-col pb-3 w-max min-w-[260px]">
                 <table>
                     <thead className="h-10 text-left">
                         <tr className="relative">
