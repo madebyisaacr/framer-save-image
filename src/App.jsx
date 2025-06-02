@@ -71,10 +71,25 @@ function SingleImageView({ image }) {
 
 function Table({ rows }) {
     const tableRef = useRef(null)
-    const [activeImage, setActiveImage] = useState(null)
+    const popupContainerRef = useRef(null)
+    const popupRef = useRef(null)
+    const popupArrowRef = useRef(null)
 
-    function changeActiveImage(image) {
-        setActiveImage(image === activeImage ? null : image)
+    const [activeImage, setActiveImage] = useState(null)
+    const [activeImageElement, setActiveImageElement] = useState(null)
+
+    const activeImageIndex = activeImage ? rows.findIndex(row => row.images.includes(activeImage)) : -1
+    const isArrowAbove = activeImage ? (rows.length === 1 ? true : activeImageIndex !== rows.length - 1) : true
+
+    function changeActiveImage(image, element) {
+        const isSelecting = image !== activeImage
+        if (isSelecting) {
+            setActiveImage(image)
+            setActiveImageElement(element)
+        } else {
+            setActiveImage(null)
+            setActiveImageElement(null)
+        }
     }
 
     useEffect(() => {
@@ -85,8 +100,21 @@ function Table({ rows }) {
             framer.showUI({
                 position: "top right",
                 width: Math.max(Math.min(tableRef.current.offsetWidth, 600), 260),
-                height: Math.max(Math.min(tableRef.current.offsetHeight, 500), 92 + 58 - 2),
+                height: Math.max(Math.min(tableRef.current.offsetHeight, 500), 158),
             })
+
+            if (activeImage) {
+                const rect = activeImageElement.getBoundingClientRect()
+                const centerOfImage = rect.left + rect.width / 2
+                const centerFromRight = window.innerWidth - centerOfImage
+                const popupWidth = popupRef.current.offsetWidth
+                const paddingRight = centerFromRight - popupWidth / 2
+                const bottom = isArrowAbove ? Math.max(window.innerHeight - rect.top - 48 - 50, 8) : 0
+
+                popupContainerRef.current.style.paddingBottom = `${bottom}px`
+                popupContainerRef.current.style.paddingRight = `${Math.max(paddingRight, 8)}px`
+                popupArrowRef.current.style.right = `${centerFromRight}px`
+            }
         }
 
         // Initial size update
@@ -99,14 +127,27 @@ function Table({ rows }) {
         return () => {
             resizeObserver.disconnect()
         }
-    }, [])
+    }, [activeImage, activeImageElement])
+
+    // Add keyboard event listener for Escape key
+    useEffect(() => {
+        const handleKeyDown = event => {
+            if (event.key === "Escape" && activeImage) {
+                setActiveImage(null)
+                setActiveImageElement(null)
+            }
+        }
+
+        window.addEventListener("keydown", handleKeyDown)
+        return () => window.removeEventListener("keydown", handleKeyDown)
+    }, [activeImage])
 
     return (
         <div className="overflow-auto h-full flex-col select-none relative">
             <div ref={tableRef} className="flex-col gap-1 px-3 pb-px w-max">
                 <table>
-                    <thead className="h-8 text-left align-text-top">
-                        <tr className="border-b border-divider">
+                    <thead className="h-10 text-left">
+                        <tr className="border-b border-t border-divider">
                             <TableHeading className="min-w-[100px]">Name</TableHeading>
                             <TableHeading>Images</TableHeading>
                         </tr>
@@ -117,25 +158,37 @@ function Table({ rows }) {
                                 key={row.id}
                                 row={row}
                                 isLastRow={index === rows.length - 1}
-                                setActiveImage={changeActiveImage}
+                                activeImage={activeImage}
+                                changeActiveImage={changeActiveImage}
                             />
                         ))}
                     </tbody>
                 </table>
             </div>
             {activeImage && (
-                <div className="absolute inset-x-0 bottom-0 px-1.5 pb-1.5 flex-row center pointer-events-none">
+                <div
+                    ref={popupContainerRef}
+                    className={classNames(
+                        "absolute inset-x-0 flex-row justify-end pointer-events-none",
+                        isArrowAbove ? "bottom-0" : "bottom-[48px]"
+                    )}
+                >
                     <div
+                        ref={popupRef}
                         className="flex-col gap-2 bg-modal rounded-xl p-2 max-w-fit flex-1 pointer-events-auto"
                         style={{
                             boxShadow: "rgba(0, 0, 0, 0.1) 0px 10px 30px 0px",
                         }}
                     >
                         <svg
+                            ref={popupArrowRef}
                             xmlns="http://www.w3.org/2000/svg"
                             width="28"
                             height="8"
-                            className="absolute left-1/2 -translate-x-1/2 -top-[8px]"
+                            className={classNames(
+                                "absolute translate-x-1/2",
+                                isArrowAbove ? "-top-[8px]" : "-bottom-[8px] rotate-180"
+                            )}
                             color="var(--color-bg-modal)"
                         >
                             <path
@@ -143,7 +196,7 @@ function Table({ rows }) {
                                 fill="currentColor"
                             ></path>
                         </svg>
-                        <ImageButtons image={activeImage} small />
+                        <ImageButtons image={activeImage} row onButtonClick={() => changeActiveImage(null, null)} />
                     </div>
                 </div>
             )}
@@ -152,12 +205,12 @@ function Table({ rows }) {
 }
 
 function TableHeading({ children, className }) {
-    return (
-        <th className={classNames("text-tertiary hover:text-primary font-medium pt-[7px]", className)}>{children}</th>
-    )
+    return <th className={classNames("text-tertiary hover:text-primary font-medium", className)}>{children}</th>
 }
 
-function TableRow({ row, isLastRow = false, setActiveImage }) {
+function TableRow({ row, isLastRow = false, activeImage, changeActiveImage }) {
+    const imageElements = useRef([])
+
     return (
         <tr
             className={classNames(
@@ -168,12 +221,18 @@ function TableRow({ row, isLastRow = false, setActiveImage }) {
             <td className="text-nowrap pr-3 max-w-[200px] truncate">{row.node.name}</td>
             <td>
                 <div className="flex-row gap-2 h-10">
-                    {row.images.map(image => (
+                    {row.images.map((image, index) => (
                         <div
                             className="flex-col center w-10 h-full shrink-0 cursor-pointer"
-                            onClick={() => setActiveImage(image)}
+                            ref={el => (imageElements.current[index] = el)}
+                            onClick={() => changeActiveImage(image, imageElements.current[index])}
                         >
-                            <div className="w-full h-[22px] relative rounded-[4px] overflow-hidden bg-secondary">
+                            <div
+                                className={classNames(
+                                    "w-full h-[22px] relative rounded-[4px] overflow-hidden bg-secondary transition-transform",
+                                    activeImage === image && "scale-110"
+                                )}
+                            >
                                 <img
                                     src={`${image.url}?scale-down-to=512`}
                                     alt={image.altText}
@@ -190,7 +249,7 @@ function TableRow({ row, isLastRow = false, setActiveImage }) {
     )
 }
 
-function ImageButtons({ image, small = false }) {
+function ImageButtons({ image, row = false, onButtonClick = null }) {
     const hasImage = image ? true : false
 
     async function onCopyImageClick() {
@@ -211,6 +270,8 @@ function ImageButtons({ image, small = false }) {
             console.error(err)
             framer.notify("Failed to copy image", { variant: "error" })
         }
+
+        if (onButtonClick) onButtonClick()
     }
 
     function onCopyImageUrlClick() {
@@ -222,6 +283,8 @@ function ImageButtons({ image, small = false }) {
         } else {
             framer.notify("Failed to copy image URL", { variant: "error" })
         }
+
+        if (onButtonClick) onButtonClick()
     }
 
     function onDownloadImageClick() {
@@ -233,8 +296,11 @@ function ImageButtons({ image, small = false }) {
         } else {
             framer.notify("Failed to download image", { variant: "error" })
         }
+
+        if (onButtonClick) onButtonClick()
     }
-    return small ? (
+
+    return row ? (
         <div className="flex-row gap-2 w-full">
             <button disabled={!hasImage} onClick={onCopyImageClick} className="w-fit px-2.5">
                 Copy Image
