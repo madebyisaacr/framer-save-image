@@ -2,6 +2,7 @@ import { framer, isFrameNode, isComponentInstanceNode, isImageAsset } from "fram
 import { useState, useEffect, useMemo, useRef } from "react"
 import "./App.css"
 import { copyToClipboard, downloadFile } from "./utils"
+import { useDynamicPluginHeight } from "./useDynamicPluginHeight"
 import classNames from "classnames"
 
 export function App() {
@@ -59,26 +60,23 @@ export function App() {
 }
 
 function SingleImageView({ image }) {
-    useEffect(() => {
-        framer.showUI({
-            position: "top right",
-            width: 260,
-            height: 300,
-        })
-    }, [])
+    useDynamicPluginHeight({
+        position: "top right",
+        width: framer.mode === "editImage" ? 400 : 260,
+    })
 
     return (
-        <main className="flex-col px-3 pb-3 gap-2 size-full overflow-hidden select-none">
-            <div className="w-full flex-1 overflow-hidden bg-secondary rounded flex center">
+        <main className="flex-col px-3 pb-3 gap-2 w-full overflow-hidden select-none">
+            <div className="w-full overflow-hidden bg-tertiary dark:bg-secondary rounded flex center">
                 {image ? (
                     <img
                         src={`${image.url}?scale-down-to=512`}
                         alt={image.altText}
-                        className="size-full object-contain"
+                        className="w-full object-contain max-h-[400px] min-h-10"
                         draggable={false}
                     />
                 ) : (
-                    <span className="text-tertiary">Select an image</span>
+                    <span className="text-secondary w-full aspect-video flex center">Select an image</span>
                 )}
             </div>
             <ImageButtons image={image} />
@@ -206,11 +204,16 @@ function CollectionTable() {
                         <option value="" disabled>
                             Select a collection...
                         </option>
-                        {collections.map(collection => (
-                            <option key={collection.id} value={collection.id}>
-                                {collection.name}
-                            </option>
-                        ))}
+                        {[...collections]
+                            .sort((a, b) => {
+                                if (a.readonly === b.readonly) return 0
+                                return a.readonly ? 1 : -1
+                            })
+                            .map(collection => (
+                                <option key={collection.id} value={collection.id}>
+                                    {collection.name}
+                                </option>
+                            ))}
                     </select>
                 </div>
             )}
@@ -252,6 +255,25 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
     const [activeImageElement, setActiveImageElement] = useState(null)
 
     const ref = useRef(null)
+
+    // Auto-select first image when entering table view in canvas mode
+    useEffect(() => {
+        if (framer.mode === "canvas" && !isCollectionMode && rows.length > 0 && !activeSelection.nodeId) {
+            // Find first row with images
+            for (const row of rows) {
+                for (const columnName of columns) {
+                    const images = row.columns?.[columnName]
+                    if (Array.isArray(images) && images.length > 0) {
+                        const firstImage = images[0]
+                        // We'll set the activeImageElement in the next render cycle
+                        setActiveSelection({ nodeId: row.id, imageId: firstImage.id })
+                        break
+                    }
+                }
+                if (activeSelection.nodeId) break
+            }
+        }
+    }, [rows, columns, isCollectionMode])
 
     // Find the active image from the rows based on the stored IDs
     const activeImage = useMemo(() => {
@@ -393,7 +415,7 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
         <tr
             className={classNames(
                 "h-10 text-secondary group hover:text-primary font-medium px-3 relative",
-                includesActiveImage && "text-primary bg-[#FCFCFC]"
+                includesActiveImage && "text-primary bg-[#FCFCFC] dark:bg-[#161616]"
             )}
         >
             <td
@@ -451,7 +473,7 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
     )
 }
 
-function ImageButtons({ image, row = false, onButtonClick = null }) {
+function ImageButtons({ image, onButtonClick = null }) {
     const hasImage = image ? true : false
 
     async function onCopyImageClick() {
@@ -502,29 +524,17 @@ function ImageButtons({ image, row = false, onButtonClick = null }) {
         if (onButtonClick) onButtonClick()
     }
 
-    return row ? (
-        <div className="flex-row gap-2 w-full">
-            <button disabled={!hasImage} onClick={onCopyImageClick} className="w-fit px-2.5">
-                Copy Image
-            </button>
-            <button disabled={!hasImage} onClick={onCopyImageUrlClick} className="w-fit px-2.5">
-                Copy URL
-            </button>
-            <button disabled={!hasImage} onClick={onDownloadImageClick} className="framer-button-primary w-fit px-2.5">
-                Download
-            </button>
-        </div>
-    ) : (
-        <div className="flex-col gap-2 w-full">
+    return (
+        <div className={classNames("flex-col gap-2 w-full", !hasImage && "opacity-50 pointer-events-none")}>
             <div className="flex-row gap-2 flex-1">
-                <button disabled={!hasImage} onClick={onCopyImageClick} className="flex-1">
+                <button onClick={onCopyImageClick} className="flex-1">
                     Copy Image
                 </button>
-                <button disabled={!hasImage} onClick={onCopyImageUrlClick} className="flex-1">
+                <button onClick={onCopyImageUrlClick} className="flex-1">
                     Copy URL
                 </button>
             </div>
-            <button disabled={!hasImage} onClick={onDownloadImageClick} className="framer-button-primary">
+            <button onClick={onDownloadImageClick} className="framer-button-primary">
                 Download
             </button>
         </div>
