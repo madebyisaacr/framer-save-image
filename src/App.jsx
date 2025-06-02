@@ -472,7 +472,7 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
                                           {image && (
                                               <>
                                                   {activeImage === image && (
-                                                      <div className="absolute -inset-[3px] border border-tint rounded-[7px]">
+                                                      <div className="absolute -inset-[4px] border-2 border-tint rounded">
                                                           <div className="bg-tint rounded-[inherit] absolute inset-0 opacity-15" />
                                                       </div>
                                                   )}
