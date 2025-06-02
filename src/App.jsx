@@ -23,8 +23,12 @@ export function App() {
             } else if (isComponentInstanceNode(node)) {
                 type = "component"
                 if (node.controls) {
+                    // Create a Set to track unique image IDs
+                    const uniqueImageIds = new Set()
+
                     for (const value of Object.values(node.controls)) {
-                        if (isImageAsset(value)) {
+                        if (isImageAsset(value) && !uniqueImageIds.has(value.id)) {
+                            uniqueImageIds.add(value.id)
                             nodeImages.push(value)
                         }
                     }
