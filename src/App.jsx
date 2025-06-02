@@ -180,8 +180,22 @@ function CollectionTable() {
         return [rows, columns, titleColumnName]
     }, [collection, collectionFields, collectionItems, isLoading])
 
+    useEffect(() => {
+        // Handle UI sizing when there are no image fields
+        if (!isLoading && columns.length === 0) {
+            framer.showUI({
+                position: "top right",
+                width: 300,
+                height: 300,
+            })
+        }
+    }, [isLoading, columns.length])
+
     return (
-        <div ref={ref} className={classNames("flex-col", isLoading || columns.length === 0 ? "w-full" : "min-w-max")}>
+        <div
+            ref={ref}
+            className={classNames("flex-col", isLoading || columns.length === 0 ? "w-full size-full" : "min-w-max")}
+        >
             {collections.length > 1 && (
                 <div className="flex-col px-3 pb-3">
                     <select
@@ -213,8 +227,8 @@ function CollectionTable() {
                     isCollectionMode
                 />
             ) : (
-                <div className="flex-col py-10 center gap-1 px-3 w-full text-center text-balance">
-                    <span className="text-primary">No image fields found</span>
+                <div className="flex-col pt-6 pb-10 center gap-1 px-3 w-full flex-1 text-center text-balance">
+                    <span className="text-primary font-semibold">No image fields found</span>
                     <span className="text-tertiary">This collection doesn't have any image fields.</span>
                     {collectionFields.some(field => field.type === "unsupported") && (
                         <p className="text-tertiary mt-2">
@@ -292,7 +306,7 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
         return () => {
             resizeObserver.disconnect()
         }
-    }, [activeImage, activeImageElement])
+    }, [rows, activeImage, activeImageElement])
 
     // Add keyboard event listener for Escape key
     useEffect(() => {
@@ -384,7 +398,7 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
         >
             <td
                 className={classNames(
-                    "text-nowrap px-3 items-center",
+                    "text-nowrap px-3 items-center cursor-pointer",
                     isCollectionMode ? "min-w-[250px] max-w-[300px]" : "max-w-[200px]"
                 )}
                 onClick={handleTitleClick}
