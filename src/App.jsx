@@ -192,7 +192,10 @@ function CollectionTable() {
     return (
         <div
             ref={ref}
-            className={classNames("flex-col", isLoading || columns.length === 0 ? "w-full size-full" : "w-max")}
+            className={classNames(
+                "flex-col max-h-[500px]",
+                isLoading || columns.length === 0 ? "w-full size-full" : "w-max"
+            )}
         >
             {collections.length > 1 && (
                 <div className="flex-col px-3 pb-3">
@@ -345,7 +348,8 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
 
     return (
         <div ref={ref} className="overflow-auto flex-col select-none relative w-max">
-            <div className="flex-col pb-3 w-max min-w-[260px]">
+            <div className="flex-col w-max min-w-[260px] relative">
+                <div className="sticky top-0 h-px bg-divider mx-3" />
                 <table>
                     <thead className="h-10 text-left">
                         <tr className="relative">
@@ -355,7 +359,6 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
                                     {column}
                                 </TableHeading>
                             ))}
-                            <div className="absolute inset-x-3 top-0 h-px bg-divider" />
                             <div className="absolute inset-x-3 bottom-0 h-px bg-divider" />
                         </tr>
                     </thead>
@@ -373,8 +376,8 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
                         ))}
                     </tbody>
                 </table>
-                <div className="flex-col gap-3 px-3">
-                    <div className="w-full h-px bg-divider shrink-0" />
+                <div className="flex-col gap-3 p-3 sticky bottom-0 bg-primary">
+                    <div className="absolute inset-x-3 top-0 h-px bg-divider" />
                     <ImageButtons image={activeImage} />
                 </div>
             </div>
