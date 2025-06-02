@@ -181,7 +181,7 @@ function CollectionTable() {
     }, [collection, collectionFields, collectionItems, isLoading])
 
     return (
-        <div ref={ref} className="flex-col min-w-max">
+        <div ref={ref} className={classNames("flex-col", isLoading || columns.length === 0 ? "w-full" : "min-w-max")}>
             {collections.length > 1 && (
                 <div className="flex-col px-3 pb-3">
                     <select
@@ -201,10 +201,10 @@ function CollectionTable() {
                 </div>
             )}
             {isLoading ? (
-                <div className="flex-col center flex-1 w-full">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                     <div className="framer-spinner" />
                 </div>
-            ) : (
+            ) : columns.length > 0 ? (
                 <Table
                     containerRef={ref}
                     rows={rows}
@@ -212,6 +212,22 @@ function CollectionTable() {
                     titleColumnName={titleColumnName}
                     isCollectionMode
                 />
+            ) : (
+                <div className="flex-col py-10 center gap-1 px-3 w-full text-center text-balance">
+                    <span className="text-primary">No image fields found</span>
+                    <span className="text-tertiary">This collection doesn't have any image fields.</span>
+                    {collectionFields.some(field => field.type === "unsupported") && (
+                        <p className="text-tertiary mt-2">
+                            Due to a technical limitation, gallery fields are not currently supported.{" "}
+                            <a
+                                href="https://www.framer.community/c/plugin-api-requests/add-gallery-fields-support-to-cms-plugins"
+                                target="_blank"
+                            >
+                                Learn more...
+                            </a>
+                        </p>
+                    )}
+                </div>
             )}
         </div>
     )

@@ -48,3 +48,7 @@ strong {
 select:not([disabled]) {
     @apply cursor-pointer;
 }
+
+a {
+    @apply text-tint hover:underline;
+}
