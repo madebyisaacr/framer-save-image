@@ -71,6 +71,11 @@ function SingleImageView({ image }) {
 
 function Table({ rows }) {
     const tableRef = useRef(null)
+    const [activeImage, setActiveImage] = useState(null)
+
+    function changeActiveImage(image) {
+        setActiveImage(image === activeImage ? null : image)
+    }
 
     useEffect(() => {
         if (!tableRef.current) return
@@ -80,7 +85,7 @@ function Table({ rows }) {
             framer.showUI({
                 position: "top right",
                 width: Math.max(Math.min(tableRef.current.offsetWidth, 600), 260),
-                height: Math.min(tableRef.current.offsetHeight, 500),
+                height: Math.max(Math.min(tableRef.current.offsetHeight, 500), 92 + 58 - 2),
             })
         }
 
@@ -97,10 +102,10 @@ function Table({ rows }) {
     }, [])
 
     return (
-        <div className="overflow-auto flex-col select-none">
+        <div className="overflow-auto h-full flex-col select-none relative">
             <div ref={tableRef} className="flex-col gap-1 px-3 pb-px w-max">
                 <table>
-                    <thead className="h-10 text-left">
+                    <thead className="h-8 text-left align-text-top">
                         <tr className="border-b border-divider">
                             <TableHeading className="min-w-[100px]">Name</TableHeading>
                             <TableHeading>Images</TableHeading>
@@ -108,20 +113,51 @@ function Table({ rows }) {
                     </thead>
                     <tbody>
                         {rows.map((row, index) => (
-                            <TableRow key={row.id} row={row} isLastRow={index === rows.length - 1} />
+                            <TableRow
+                                key={row.id}
+                                row={row}
+                                isLastRow={index === rows.length - 1}
+                                setActiveImage={changeActiveImage}
+                            />
                         ))}
                     </tbody>
                 </table>
             </div>
+            {activeImage && (
+                <div className="absolute inset-x-0 bottom-0 px-1.5 pb-1.5 flex-row center pointer-events-none">
+                    <div
+                        className="flex-col gap-2 bg-modal rounded-xl p-2 max-w-fit flex-1 pointer-events-auto"
+                        style={{
+                            boxShadow: "rgba(0, 0, 0, 0.1) 0px 10px 30px 0px",
+                        }}
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="28"
+                            height="8"
+                            className="absolute left-1/2 -translate-x-1/2 -top-[8px]"
+                            color="var(--color-bg-modal)"
+                        >
+                            <path
+                                d="M 12.833 1.333 C 13.451 0.627 14.549 0.627 15.167 1.333 L 18.012 4.585 C 19.911 6.755 22.654 8 25.538 8 L 28 8 L 0 8 L 2.462 8 C 5.346 8 8.089 6.755 9.988 4.585 Z"
+                                fill="currentColor"
+                            ></path>
+                        </svg>
+                        <ImageButtons image={activeImage} small />
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
 
 function TableHeading({ children, className }) {
-    return <th className={classNames("text-tertiary hover:text-primary font-medium", className)}>{children}</th>
+    return (
+        <th className={classNames("text-tertiary hover:text-primary font-medium pt-[7px]", className)}>{children}</th>
+    )
 }
 
-function TableRow({ row, isLastRow = false }) {
+function TableRow({ row, isLastRow = false, setActiveImage }) {
     return (
         <tr
             className={classNames(
@@ -131,16 +167,21 @@ function TableRow({ row, isLastRow = false }) {
         >
             <td className="text-nowrap pr-3 max-w-[200px] truncate">{row.node.name}</td>
             <td>
-                <div className="flex-row gap-2">
+                <div className="flex-row gap-2 h-10">
                     {row.images.map(image => (
-                        <div className="w-10 h-[22px] shrink-0 relative rounded-[4px] overflow-hidden bg-secondary">
-                            <img
-                                src={`${image.url}?scale-down-to=512`}
-                                alt={image.altText}
-                                className="size-full object-cover"
-                                draggable={false}
-                            />
-                            <div className="absolute inset-0 border border-image-border rounded-[inherit]" />
+                        <div
+                            className="flex-col center w-10 h-full shrink-0 cursor-pointer"
+                            onClick={() => setActiveImage(image)}
+                        >
+                            <div className="w-full h-[22px] relative rounded-[4px] overflow-hidden bg-secondary">
+                                <img
+                                    src={`${image.url}?scale-down-to=512`}
+                                    alt={image.altText}
+                                    className="size-full object-cover"
+                                    draggable={false}
+                                />
+                                <div className="absolute inset-0 border border-image-border rounded-[inherit]" />
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -149,7 +190,7 @@ function TableRow({ row, isLastRow = false }) {
     )
 }
 
-function ImageButtons({ image }) {
+function ImageButtons({ image, small = false }) {
     const hasImage = image ? true : false
 
     async function onCopyImageClick() {
@@ -193,21 +234,31 @@ function ImageButtons({ image }) {
             framer.notify("Failed to download image", { variant: "error" })
         }
     }
-    return (
+    return small ? (
         <div className="flex-row gap-2 w-full">
-            <div className="flex-col gap-2 flex-1">
-                <button disabled={!hasImage} onClick={onCopyImageClick} className="">
+            <button disabled={!hasImage} onClick={onCopyImageClick} className="w-fit px-2.5">
+                Copy Image
+            </button>
+            <button disabled={!hasImage} onClick={onCopyImageUrlClick} className="w-fit px-2.5">
+                Copy URL
+            </button>
+            <button disabled={!hasImage} onClick={onDownloadImageClick} className="framer-button-primary w-fit px-2.5">
+                Download
+            </button>
+        </div>
+    ) : (
+        <div className="flex-col gap-2 w-full">
+            <div className="flex-row gap-2 flex-1">
+                <button disabled={!hasImage} onClick={onCopyImageClick} className="flex-1">
                     Copy Image
                 </button>
-                <button disabled={!hasImage} onClick={onCopyImageUrlClick} className="">
+                <button disabled={!hasImage} onClick={onCopyImageUrlClick} className="flex-1">
                     Copy URL
                 </button>
             </div>
-            <div className="flex-col gap-2 flex-1">
-                <button disabled={!hasImage} onClick={onDownloadImageClick} className="framer-button-primary h-full">
-                    Download
-                </button>
-            </div>
+            <button disabled={!hasImage} onClick={onDownloadImageClick} className="framer-button-primary">
+                Download
+            </button>
         </div>
     )
 }

@@ -15,6 +15,7 @@ export default {
             "tint-dark": "var(--framer-color-tint-dark)",
             "segmented-control": "var(--color-segmented-control)",
             transparent: "transparent",
+            modal: "var(--color-bg-modal)",
         },
         colors: {
             primary: "var(--framer-color-text)",
