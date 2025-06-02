@@ -1,10 +1,41 @@
-/* Your Plugin CSS */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-main {
+[data-framer-theme="light"] {
+    --color-segmented-control: #fff;
+    --color-divider-secondary: #e6e6e6;
+    --color-image-border: rgba(0, 0, 0, 0.06);
+}
+
+[data-framer-theme="dark"] {
+    --color-segmented-control: #555;
+    --color-divider-secondary: #444;
+    --color-image-border: rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar {
+    display: none;
+}
+
+.flex-col {
     display: flex;
     flex-direction: column;
-    align-items: start;
-    padding: 0 15px 15px 15px;
-    height: 100%;
-    gap: 15px;
+}
+
+.flex-row {
+    display: flex;
+    flex-direction: row;
+}
+
+.center {
+    @apply items-center justify-center;
+}
+
+strong {
+    @apply text-primary font-semibold;
+}
+
+select:not([disabled]) {
+    @apply cursor-pointer;
 }
