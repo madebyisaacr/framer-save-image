@@ -70,11 +70,12 @@ function CanvasView() {
     useDynamicPluginHeight({
         position: "top right",
         width: framer.mode === "editImage" ? 400 : 260,
+        maxHeight: 500,
     })
 
     const images = useMemo(() => {
         if (framer.mode === "editImage") {
-            return [image]
+            return image ? [image] : []
         } else {
             const allImages = []
 
@@ -105,13 +106,14 @@ function CanvasView() {
             // Limit to 100 images
             return uniqueImages.slice(0, MAX_IMAGES_CANVAS)
         }
-    }, [selection])
+    }, [image, selection])
 
     const dimensions = useImageDimensions(images)
 
     // Only use images whose dimensions are loaded
     const imagesWithDimensions = useMemo(() => {
         return images.filter(img => {
+            if (!img) return false
             const dim = dimensions[img.id]
             return dim && dim.width && dim.height
         })
@@ -131,79 +133,84 @@ function CanvasView() {
         const heightPerColumn = Array(COLUMN_COUNT).fill(0)
         const columns = Array.from({ length: COLUMN_COUNT }, () => [])
 
-        if (!imagesWithDimensions.length) return columns
+        if (!images.length) return columns
 
-        for (const img of imagesWithDimensions) {
-            const itemHeight = calculateImageHeight(img, dimensions)
+        for (const img of images) {
+            const itemHeight = dimensions[img.id] ? calculateImageHeight(img, dimensions) : 40
             const minColumnIndex = heightPerColumn.indexOf(Math.min(...heightPerColumn))
             columns[minColumnIndex].push(img)
             heightPerColumn[minColumnIndex] += itemHeight
         }
 
         return columns
-    }, [imagesWithDimensions, dimensions])
+    }, [images, dimensions])
 
     return (
-        <main className="flex-col px-3 gap-3 w-full overflow-hidden select-none">
-            {imagesWithDimensions.length === 1 ? (
-                <ImageItem image={imagesWithDimensions[0]} />
-            ) : imagesWithDimensions.length > 0 ? (
-                <div ref={scrollRef} className="relative flex-1 rounded pt-3">
-                    <div className="absolute inset-x-0 top-0 h-px bg-divider" />
-                    <div className="relative">
-                        <div className="flex-row gap-2">
-                            {imageColumns.map((columnImages, i) => (
-                                <div key={`column-${i}`} className="flex-col gap-2 flex-1">
-                                    {columnImages.map(image => (
-                                        <ImageItem
-                                            key={image.id}
-                                            image={image}
-                                            height={calculateImageHeight(image, dimensions)}
-                                            selected={selectedImageId === image.id}
-                                            onClick={() =>
-                                                setSelectedImageId(selectedImageId === image.id ? null : image.id)
-                                            }
-                                        />
-                                    ))}
-                                </div>
-                            ))}
+        <div className="flex-col w-full relative">
+            {images.length > 1 && <div className="absolute inset-x-3 top-0 h-px bg-divider z-10" />}
+            <main className="flex-col px-3 gap-3 w-full overflow-y-auto max-h-[500px] select-none">
+                {images.length === 1 ? (
+                    <ImageItem image={images[0]} useDimensions={false} />
+                ) : images.length > 0 ? (
+                    <div ref={scrollRef} className="relative flex-1 rounded pt-3">
+                        <div className="relative">
+                            <div className="flex-row gap-2">
+                                {imageColumns.map((columnImages, i) => (
+                                    <div key={`column-${i}`} className="flex-col gap-2 flex-1">
+                                        {columnImages.map(image => (
+                                            <ImageItem
+                                                key={image.id}
+                                                image={image}
+                                                height={
+                                                    dimensions[image.id] ? calculateImageHeight(image, dimensions) : 100
+                                                }
+                                                useDimensions={true}
+                                                selected={selectedImageId === image.id}
+                                                onClick={() =>
+                                                    setSelectedImageId(selectedImageId === image.id ? null : image.id)
+                                                }
+                                            />
+                                        ))}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
+                ) : (
+                    <span className="w-full overflow-hidden bg-tertiary dark:bg-secondary rounded flex center relative text-secondary aspect-video flex-col center gap-2">
+                        <div className="size-[22px] relative flex center">
+                            <div className="absolute inset-0 rounded-[4px] bg-[var(--framer-color-text)] opacity-15" />
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" className="text-secondary">
+                                <path
+                                    d="M 10.838 9.29 C 10.444 8.683 9.556 8.683 9.162 9.29 L 4.504 16.455 C 4.072 17.12 4.549 18 5.343 18 L 14.657 18 C 15.451 18 15.928 17.12 15.496 16.455 Z"
+                                    fill="currentColor"
+                                ></path>
+                                <path
+                                    d="M 16 4 C 17.105 4 18 4.895 18 6 C 18 7.105 17.105 8 16 8 C 14.895 8 14 7.105 14 6 C 14 4.895 14.895 4 16 4 Z"
+                                    fill="currentColor"
+                                ></path>
+                            </svg>
+                        </div>
+                        Select an image
+                    </span>
+                )}
+                <div className="flex-col gap-3 py-3 sticky bottom-0 bg-primary">
+                    <div className="absolute inset-x-0 top-0 h-px bg-divider" />
+                    <ImageButtons image={selectedImage} />
                 </div>
-            ) : (
-                <span className="w-full overflow-hidden bg-tertiary dark:bg-secondary rounded flex center relative text-secondary aspect-video flex-col center gap-2">
-                    <div className="size-[22px] relative flex center">
-                        <div className="absolute inset-0 rounded-[4px] bg-[var(--framer-color-text)] opacity-15" />
-                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" className="text-secondary">
-                            <path
-                                d="M 10.838 9.29 C 10.444 8.683 9.556 8.683 9.162 9.29 L 4.504 16.455 C 4.072 17.12 4.549 18 5.343 18 L 14.657 18 C 15.451 18 15.928 17.12 15.496 16.455 Z"
-                                fill="currentColor"
-                            ></path>
-                            <path
-                                d="M 16 4 C 17.105 4 18 4.895 18 6 C 18 7.105 17.105 8 16 8 C 14.895 8 14 7.105 14 6 C 14 4.895 14.895 4 16 4 Z"
-                                fill="currentColor"
-                            ></path>
-                        </svg>
-                    </div>
-                    Select an image
-                </span>
-            )}
-            <div className="flex-col gap-3 py-3 sticky bottom-0 bg-primary">
-                <div className="absolute inset-x-0 top-0 h-px bg-divider" />
-                <ImageButtons image={selectedImage} />
-            </div>
-        </main>
+            </main>
+        </div>
     )
 }
 
-function ImageItem({ image, height, selected = false, onClick = null }) {
+function ImageItem({ image, height, useDimensions = false, selected = false, onClick = null }) {
     return (
         <div
             className={classNames(
                 "w-full bg-tertiary dark:bg-secondary rounded flex center relative",
                 onClick && "cursor-pointer"
             )}
-            style={{ height: height ? `${height}px` : undefined }}
+            style={{ height: useDimensions ? (height ? height : 400) : undefined }}
             onClick={onClick}
         >
             {selected && (
@@ -211,13 +218,15 @@ function ImageItem({ image, height, selected = false, onClick = null }) {
                     <div className="bg-tint rounded-[inherit] absolute inset-0 opacity-15" />
                 </div>
             )}
-            <img
-                src={`${image.url}?scale-down-to=512`}
-                alt={image.altText}
-                className="w-full h-full object-contain relative rounded-[inherit]"
-                style={{ maxHeight: height ? `${height}px` : "400px", minHeight: "10px" }}
-                draggable={false}
-            />
+            {(!useDimensions || height > 0) && (
+                <img
+                    src={`${image.url}?scale-down-to=512`}
+                    alt={image.altText}
+                    className="w-full h-full object-contain relative rounded-[inherit]"
+                    style={{ maxHeight: useDimensions ? (height ? height : 400) : undefined, minHeight: 10 }}
+                    draggable={false}
+                />
+            )}
             <div className="absolute inset-0 border border-image-border rounded-[inherit]" />
         </div>
     )
