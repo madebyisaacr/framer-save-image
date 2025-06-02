@@ -1,7 +1,8 @@
 import { framer, isFrameNode, isComponentInstanceNode, isImageAsset } from "framer-plugin"
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import "./App.css"
 import { copyToClipboard, downloadFile } from "./utils"
+import classNames from "classnames"
 
 export function App() {
     const selection = useSelection()
@@ -40,6 +41,10 @@ export function App() {
         return result
     }, [selection])
 
+    return image ? <SingleImageView image={image} /> : rows.length > 0 ? <Table rows={rows} /> : <SingleImageView />
+}
+
+function SingleImageView({ image }) {
     useEffect(() => {
         framer.showUI({
             position: "top right",
@@ -48,10 +53,6 @@ export function App() {
         })
     }, [])
 
-    return image ? <SingleImageView image={image} /> : rows.length > 0 ? <Table rows={rows} /> : <SingleImageView />
-}
-
-function SingleImageView({ image }) {
     return (
         <main className="flex-col px-3 pb-3 gap-2 size-full overflow-hidden select-none">
             <div className="w-full flex-1 overflow-hidden bg-secondary rounded flex center">
@@ -67,33 +68,71 @@ function SingleImageView({ image }) {
 }
 
 function Table({ rows }) {
+    const tableRef = useRef(null)
+
+    useEffect(() => {
+        if (!tableRef.current) return
+
+        const maxWidth = 600
+        const maxHeight = 500
+
+        const updateSize = () => {
+            if (!tableRef.current) return
+            framer.showUI({
+                position: "top right",
+                width: Math.min(tableRef.current.offsetWidth, maxWidth),
+                height: Math.min(tableRef.current.offsetHeight, maxHeight),
+            })
+        }
+
+        // Initial size update
+        updateSize()
+
+        // Set up resize observer
+        const resizeObserver = new ResizeObserver(updateSize)
+        resizeObserver.observe(tableRef.current)
+
+        return () => {
+            resizeObserver.disconnect()
+        }
+    }, [])
+
+    console.log("rerender")
+
     return (
-        <div className="flex-col gap-1 overflow-auto -mt-1.5 px-3 pb-3">
-            <table>
-                <thead className="h-10 text-left">
-                    <tr className="border-b border-divider">
-                        <TableHeading>Name</TableHeading>
-                        <TableHeading>Images</TableHeading>
-                    </tr>
-                </thead>
-                <tbody>
-                    {rows.map(row => (
-                        <TableRow key={row.id} row={row} />
-                    ))}
-                </tbody>
-            </table>
+        <div className="overflow-auto flex-col select-none">
+            <div ref={tableRef} className="flex-col gap-1 px-3 pb-px w-max">
+                <table>
+                    <thead className="h-10 text-left">
+                        <tr className="border-b border-divider">
+                            <TableHeading>Name</TableHeading>
+                            <TableHeading>Images</TableHeading>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows.map((row, index) => (
+                            <TableRow key={row.id} row={row} isLastRow={index === rows.length - 1} />
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </div>
     )
 }
 
 function TableHeading({ children }) {
-    return <th className="text-tertiary hover:text-primary font-medium transition-colors">{children}</th>
+    return <th className="text-tertiary hover:text-primary font-medium">{children}</th>
 }
 
-function TableRow({ row }) {
+function TableRow({ row, isLastRow = false }) {
     return (
-        <tr className="h-10 text-tertiary hover:text-primary transition-colors font-medium border-b border-divider">
-            <td className="text-nowrap pr-3 max-w-[175px] truncate">{row.node.name}</td>
+        <tr
+            className={classNames(
+                "h-10 text-tertiary hover:text-primary font-medium",
+                !isLastRow && "border-b border-divider"
+            )}
+        >
+            <td className="text-nowrap pr-3 max-w-[200px] truncate">{row.node.name}</td>
             <td>
                 <div className="flex-row gap-2">
                     {row.images.map(image => (
