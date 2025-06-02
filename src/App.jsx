@@ -7,6 +7,7 @@ import classNames from "classnames"
 
 const COLUMN_COUNT = 2
 const COLUMN_WIDTH = 110
+const MAX_IMAGES_CANVAS = 100
 
 function useImageDimensions(images) {
     const [dimensions, setDimensions] = useState({})
@@ -101,43 +102,52 @@ function CanvasView() {
                 }
             }
 
-            return uniqueImages
+            // Limit to 100 images
+            return uniqueImages.slice(0, MAX_IMAGES_CANVAS)
         }
     }, [selection])
 
+    const dimensions = useImageDimensions(images)
+
+    // Only use images whose dimensions are loaded
+    const imagesWithDimensions = useMemo(() => {
+        return images.filter(img => {
+            const dim = dimensions[img.id]
+            return dim && dim.width && dim.height
+        })
+    }, [images, dimensions])
+
     const selectedImage = useMemo(() => {
-        const image = images.find(image => image.id === selectedImageId)
+        const image = imagesWithDimensions.find(image => image.id === selectedImageId)
         if (!image) {
-            const firstImage = images[0]
+            const firstImage = imagesWithDimensions[0]
             setSelectedImageId(firstImage?.id ?? null)
             return firstImage
         }
         return image
-    }, [images, selectedImageId])
-
-    const dimensions = useImageDimensions(images)
+    }, [imagesWithDimensions, selectedImageId])
 
     const imageColumns = useMemo(() => {
         const heightPerColumn = Array(COLUMN_COUNT).fill(0)
         const columns = Array.from({ length: COLUMN_COUNT }, () => [])
 
-        if (!images.length) return columns
+        if (!imagesWithDimensions.length) return columns
 
-        for (const img of images) {
-            const itemHeight = calculateImageHeight(img, COLUMN_WIDTH, dimensions)
+        for (const img of imagesWithDimensions) {
+            const itemHeight = calculateImageHeight(img, dimensions)
             const minColumnIndex = heightPerColumn.indexOf(Math.min(...heightPerColumn))
             columns[minColumnIndex].push(img)
             heightPerColumn[minColumnIndex] += itemHeight
         }
 
         return columns
-    }, [images, dimensions])
+    }, [imagesWithDimensions, dimensions])
 
     return (
         <main className="flex-col px-3 gap-3 w-full overflow-hidden select-none">
-            {images.length === 1 ? (
-                <ImageItem image={images[0]} />
-            ) : images.length > 0 ? (
+            {imagesWithDimensions.length === 1 ? (
+                <ImageItem image={imagesWithDimensions[0]} />
+            ) : imagesWithDimensions.length > 0 ? (
                 <div ref={scrollRef} className="relative flex-1 rounded pt-3">
                     <div className="absolute inset-x-0 top-0 h-px bg-divider" />
                     <div className="relative">
