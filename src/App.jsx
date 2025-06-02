@@ -73,15 +73,12 @@ function Table({ rows }) {
     useEffect(() => {
         if (!tableRef.current) return
 
-        const maxWidth = 600
-        const maxHeight = 500
-
         const updateSize = () => {
             if (!tableRef.current) return
             framer.showUI({
                 position: "top right",
-                width: Math.min(tableRef.current.offsetWidth, maxWidth),
-                height: Math.min(tableRef.current.offsetHeight, maxHeight),
+                width: Math.max(Math.min(tableRef.current.offsetWidth, 600), 260),
+                height: Math.min(tableRef.current.offsetHeight, 500),
             })
         }
 
@@ -97,15 +94,13 @@ function Table({ rows }) {
         }
     }, [])
 
-    console.log("rerender")
-
     return (
         <div className="overflow-auto flex-col select-none">
             <div ref={tableRef} className="flex-col gap-1 px-3 pb-px w-max">
                 <table>
                     <thead className="h-10 text-left">
                         <tr className="border-b border-divider">
-                            <TableHeading>Name</TableHeading>
+                            <TableHeading className="min-w-[100px]">Name</TableHeading>
                             <TableHeading>Images</TableHeading>
                         </tr>
                     </thead>
@@ -120,8 +115,8 @@ function Table({ rows }) {
     )
 }
 
-function TableHeading({ children }) {
-    return <th className="text-tertiary hover:text-primary font-medium">{children}</th>
+function TableHeading({ children, className }) {
+    return <th className={classNames("text-tertiary hover:text-primary font-medium", className)}>{children}</th>
 }
 
 function TableRow({ row, isLastRow = false }) {
