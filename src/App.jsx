@@ -7,108 +7,48 @@ import classNames from "classnames"
 export function App() {
     const selection = useSelection()
     const image = useImage()
-    const [collection, setCollection] = useState(null)
-    const [collectionItems, setCollectionItems] = useState([])
-    const [collectionFields, setCollectionFields] = useState([])
 
-    const [rows, columns, titleColumnName] = useMemo(() => {
+    const rows = useMemo(() => {
         const rows = []
-        const columns = []
-        let titleColumnName = ""
 
-        if (framer.mode === "collection") {
-            if (collection && collectionFields.length > 0) {
-                let titleField = null
-                if (collection.slugFieldBasedOn) {
-                    titleField = collectionFields.find(field => field.id === collection.slugFieldBasedOn)
-                } else {
-                    titleField = collectionFields.find(field => field.name === "Title")
+        for (const node of selection) {
+            let nodeImages = []
+            let type = "frame"
+
+            if (isFrameNode(node)) {
+                if (isImageAsset(node.backgroundImage)) {
+                    nodeImages.push(node.backgroundImage)
                 }
-
-                if (titleField) {
-                    titleColumnName = titleField.name
-                }
-
-                for (const field of collectionFields) {
-                    if (field.type === "image") {
-                        columns.push(field.name)
-                    }
-                }
-
-                for (const item of collectionItems) {
-                    const columnValues = {}
-
-                    for (const field of collectionFields) {
-                        if (columns.indexOf(field.name) !== -1) {
-                            columnValues[field.name] = [item.fieldData[field.id]?.value]
-                        }
-                    }
-
-                    rows.push({
-                        id: item.id,
-                        title: item.fieldData[titleField.id]?.value,
-                        columns: columnValues,
-                    })
-                }
-            }
-        } else {
-            titleColumnName = "Name"
-            columns.push("Images")
-
-            for (const node of selection) {
-                let nodeImages = []
-                let type = "frame"
-
-                if (isFrameNode(node)) {
-                    if (isImageAsset(node.backgroundImage)) {
-                        nodeImages.push(node.backgroundImage)
-                    }
-                } else if (isComponentInstanceNode(node)) {
-                    type = "component"
-                    if (node.controls) {
-                        for (const value of Object.values(node.controls)) {
-                            if (isImageAsset(value)) {
-                                nodeImages.push(value)
-                            }
+            } else if (isComponentInstanceNode(node)) {
+                type = "component"
+                if (node.controls) {
+                    for (const value of Object.values(node.controls)) {
+                        if (isImageAsset(value)) {
+                            nodeImages.push(value)
                         }
                     }
                 }
+            }
 
-                if (nodeImages.length > 0) {
-                    rows.push({
-                        id: node.id,
-                        title: node.name,
-                        columns: { Images: nodeImages },
-                        type,
-                    })
-                }
+            if (nodeImages.length > 0) {
+                rows.push({
+                    id: node.id,
+                    title: node.name,
+                    columns: { Images: nodeImages },
+                    type,
+                })
             }
         }
 
-        return [rows, columns, titleColumnName]
-    }, [selection, collection])
-
-    useEffect(() => {
-        if (framer.mode === "collection") {
-            const updateCollection = async () => {
-                const collection = await framer.getActiveCollection()
-                const [items, fields] = await Promise.all([collection.getItems(), collection.getFields()])
-
-                setCollection(collection)
-                setCollectionItems(items)
-                setCollectionFields(fields)
-            }
-
-            updateCollection()
-        }
-    }, [])
+        return rows
+    }, [selection])
 
     return framer.mode === "collection" ? (
-        <Table rows={rows} columns={columns} titleColumnName={titleColumnName} isCollectionMode />
+        <CollectionTable />
     ) : image ? (
         <SingleImageView image={image} />
     ) : rows.length > 0 ? (
-        <Table rows={rows} columns={columns} titleColumnName={titleColumnName} />
+        <Table rows={rows} columns={["Images"]} titleColumnName="Name" />
     ) : (
         <SingleImageView />
     )
@@ -137,27 +77,132 @@ function SingleImageView({ image }) {
     )
 }
 
-function Table({ rows, columns, titleColumnName, isCollectionMode = false }) {
-    const tableRef = useRef(null)
+function CollectionTable() {
+    const ref = useRef(null)
 
+    const [collection, setCollection] = useState(null)
+    const [collections, setCollections] = useState([])
+    const [isLoading, setIsLoading] = useState(true)
+    const [collectionItems, setCollectionItems] = useState([])
+    const [collectionFields, setCollectionFields] = useState([])
+
+    useEffect(() => {
+        if (framer.mode === "collection") {
+            const updateCollection = async () => {
+                const [collection, collections] = await Promise.all([
+                    framer.getActiveCollection(),
+                    framer.getCollections(),
+                ])
+
+                setCollection(collection)
+                setCollections(collections)
+                setIsLoading(false)
+            }
+
+            updateCollection()
+        }
+    }, [])
+
+    useEffect(() => {
+        const updateCollection = async () => {
+            if (collection) {
+                setIsLoading(true)
+
+                collection.setAsActive()
+
+                const [items, fields] = await Promise.all([collection.getItems(), collection.getFields()])
+                setCollectionItems(items)
+                setCollectionFields(fields)
+
+                setIsLoading(false)
+            }
+        }
+
+        updateCollection()
+    }, [collection])
+
+    const [rows, columns, titleColumnName] = useMemo(() => {
+        const rows = []
+        const columns = []
+        let titleColumnName = ""
+
+        if (!isLoading && collection && collectionFields.length > 0) {
+            let titleField = null
+            if (collection.slugFieldBasedOn) {
+                titleField = collectionFields.find(field => field.id === collection.slugFieldBasedOn)
+            } else {
+                titleField = collectionFields.find(field => field.name === "Title")
+            }
+
+            if (titleField) {
+                titleColumnName = titleField.name
+            }
+
+            for (const field of collectionFields) {
+                if (field.type === "image") {
+                    columns.push(field.name)
+                }
+            }
+
+            for (const item of collectionItems) {
+                const columnValues = {}
+
+                for (const field of collectionFields) {
+                    if (columns.indexOf(field.name) !== -1) {
+                        columnValues[field.name] = [item.fieldData[field.id]?.value]
+                    }
+                }
+
+                rows.push({
+                    id: item.id,
+                    title: item.fieldData[titleField?.id]?.value,
+                    columns: columnValues,
+                })
+            }
+        }
+
+        return [rows, columns, titleColumnName]
+    }, [collection, collectionFields, collectionItems, isLoading])
+
+    return (
+        <div ref={ref} className="flex-col">
+            {collections.length > 1 && (
+                <div className="flex-col px-3 pb-3">
+                    <select
+                        value={collection?.id}
+                        onChange={e => setCollection(collections.find(c => c.id === e.target.value))}
+                        className="w-full pl-2"
+                    >
+                        {collections.map(collection => (
+                            <option key={collection.id} value={collection.id}>
+                                {collection.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
+            {isLoading ? (
+                <div className="flex-col center flex-1 w-full">
+                    <div className="framer-spinner" />
+                </div>
+            ) : (
+                <Table
+                    containerRef={ref}
+                    rows={rows}
+                    columns={columns}
+                    titleColumnName={titleColumnName}
+                    isCollectionMode
+                />
+            )}
+        </div>
+    )
+}
+
+function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode = false }) {
     const [activeImage, setActiveImage] = useState(null)
     const [activeImageElement, setActiveImageElement] = useState(null)
 
-    const flattenedRowImages = useMemo(() => {
-        return Array.isArray(rows)
-            ? rows.map(row => {
-                  const images = []
-
-                  for (const columnName of Object.keys(row.columns)) {
-                      if (Array.isArray(row.columns[columnName])) {
-                          images.push(...row.columns[columnName])
-                      }
-                  }
-
-                  return images
-              })
-            : []
-    }, [rows])
+    const ref = useRef(null)
 
     function changeActiveImage(image, element) {
         if (!image) return
@@ -173,15 +218,16 @@ function Table({ rows, columns, titleColumnName, isCollectionMode = false }) {
     }
 
     useEffect(() => {
-        if (!tableRef.current) return
+        const elementRef = containerRef ?? ref
+        if (!elementRef.current) return
 
         const updateSize = () => {
-            if (!tableRef.current) return
+            if (!elementRef.current) return
 
             framer.showUI({
                 position: "top right",
-                width: Math.max(Math.min(tableRef.current.offsetWidth, 600), 260),
-                height: Math.max(Math.min(tableRef.current.offsetHeight, 500), 158),
+                width: Math.max(Math.min(elementRef.current.offsetWidth, 600), 260),
+                height: Math.max(Math.min(elementRef.current.offsetHeight, 500), 158),
             })
         }
 
@@ -190,7 +236,7 @@ function Table({ rows, columns, titleColumnName, isCollectionMode = false }) {
 
         // Set up resize observer
         const resizeObserver = new ResizeObserver(updateSize)
-        resizeObserver.observe(tableRef.current)
+        resizeObserver.observe(elementRef.current)
 
         return () => {
             resizeObserver.disconnect()
@@ -211,8 +257,8 @@ function Table({ rows, columns, titleColumnName, isCollectionMode = false }) {
     }, [activeImage])
 
     return (
-        <div className="overflow-auto h-full flex-col select-none relative">
-            <div ref={tableRef} className="flex-col pb-3 min-w-max">
+        <div ref={ref} className="overflow-auto h-full flex-col select-none relative">
+            <div className="flex-col pb-3 min-w-max">
                 <table>
                     <thead className="h-10 text-left">
                         <tr className="relative">
