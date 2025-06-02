@@ -16,7 +16,9 @@ export function App() {
             let type = "frame"
 
             if (isFrameNode(node)) {
-                nodeImages.push(node.backgroundImage)
+                if (isImageAsset(node.backgroundImage)) {
+                    nodeImages.push(node.backgroundImage)
+                }
             } else if (isComponentInstanceNode(node)) {
                 type = "component"
                 if (node.controls) {
@@ -131,9 +133,9 @@ function TableRow({ row, isLastRow = false }) {
             <td>
                 <div className="flex-row gap-2">
                     {row.images.map(image => (
-                        <div className="w-10 h-[22px] relative rounded-[4px] overflow-hidden bg-secondary">
+                        <div className="w-10 h-[22px] shrink-0 relative rounded-[4px] overflow-hidden bg-secondary">
                             <img
-                                src={image.url}
+                                src={`${image.url}?scale-down-to=512`}
                                 alt={image.altText}
                                 className="size-full object-cover"
                                 draggable={false}
