@@ -104,7 +104,7 @@ export function App() {
     }, [])
 
     return framer.mode === "collection" ? (
-        <Table rows={rows} columns={columns} titleColumnName={titleColumnName} />
+        <Table rows={rows} columns={columns} titleColumnName={titleColumnName} isCollectionMode />
     ) : image ? (
         <SingleImageView image={image} />
     ) : rows.length > 0 ? (
@@ -137,11 +137,8 @@ function SingleImageView({ image }) {
     )
 }
 
-function Table({ rows, columns, titleColumnName }) {
+function Table({ rows, columns, titleColumnName, isCollectionMode = false }) {
     const tableRef = useRef(null)
-    const popupContainerRef = useRef(null)
-    const popupRef = useRef(null)
-    const popupArrowRef = useRef(null)
 
     const [activeImage, setActiveImage] = useState(null)
     const [activeImageElement, setActiveImageElement] = useState(null)
@@ -162,10 +159,9 @@ function Table({ rows, columns, titleColumnName }) {
             : []
     }, [rows])
 
-    const activeImageIndex = activeImage ? flattenedRowImages.findIndex(row => row.includes(activeImage)) : -1
-    const isArrowAbove = activeImage ? (rows.length === 1 ? true : activeImageIndex !== rows.length - 1) : true
-
     function changeActiveImage(image, element) {
+        if (!image) return
+
         const isSelecting = image !== activeImage
         if (isSelecting) {
             setActiveImage(image)
@@ -182,31 +178,11 @@ function Table({ rows, columns, titleColumnName }) {
         const updateSize = () => {
             if (!tableRef.current) return
 
-            // if (framer.mode === "collection") {
-            //     framer.showUI({
-            //         width: 600,
-            //         height: 500,
-            //     })
-            // } else {
             framer.showUI({
                 position: "top right",
                 width: Math.max(Math.min(tableRef.current.offsetWidth, 600), 260),
                 height: Math.max(Math.min(tableRef.current.offsetHeight, 500), 158),
             })
-            // }
-
-            if (activeImage) {
-                const rect = activeImageElement.getBoundingClientRect()
-                const centerOfImage = rect.left + rect.width / 2
-                const centerFromRight = window.innerWidth - centerOfImage
-                const popupWidth = popupRef.current.offsetWidth
-                const paddingRight = centerFromRight - popupWidth / 2
-                const bottom = isArrowAbove ? Math.max(window.innerHeight - rect.top - 48 - 50, 8) : 0
-
-                popupContainerRef.current.style.paddingBottom = `${bottom}px`
-                popupContainerRef.current.style.paddingRight = `${Math.max(paddingRight, 8)}px`
-                popupArrowRef.current.style.right = `${centerFromRight}px`
-            }
         }
 
         // Initial size update
@@ -236,14 +212,18 @@ function Table({ rows, columns, titleColumnName }) {
 
     return (
         <div className="overflow-auto h-full flex-col select-none relative">
-            <div ref={tableRef} className="flex-col gap-1 px-3 pb-px w-max">
+            <div ref={tableRef} className="flex-col pb-3 min-w-max">
                 <table>
                     <thead className="h-10 text-left">
-                        <tr className="border-b border-t border-divider">
-                            <TableHeading className="min-w-[100px]">{titleColumnName}</TableHeading>
-                            {columns.map((column, index) => (
-                                <TableHeading key={column}>{column}</TableHeading>
+                        <tr className="relative">
+                            <TableHeading className="min-w-[100px] pl-3">{titleColumnName}</TableHeading>
+                            {columns.map(column => (
+                                <TableHeading key={column} className="pr-3">
+                                    {column}
+                                </TableHeading>
                             ))}
+                            <div className="absolute inset-x-3 top-0 h-px bg-divider" />
+                            <div className="absolute inset-x-3 bottom-0 h-px bg-divider" />
                         </tr>
                     </thead>
                     <tbody>
@@ -253,48 +233,18 @@ function Table({ rows, columns, titleColumnName }) {
                                 row={row}
                                 columns={columns}
                                 isLastRow={index === rows.length - 1}
+                                isCollectionMode={isCollectionMode}
                                 activeImage={activeImage}
                                 changeActiveImage={changeActiveImage}
                             />
                         ))}
                     </tbody>
                 </table>
-            </div>
-            {activeImage && (
-                <div
-                    ref={popupContainerRef}
-                    className={classNames(
-                        "absolute inset-x-0 flex-row justify-end pointer-events-none",
-                        isArrowAbove ? "bottom-0" : "bottom-[48px]"
-                    )}
-                >
-                    <div
-                        ref={popupRef}
-                        className="flex-col gap-2 bg-modal rounded-xl p-2 max-w-fit flex-1 pointer-events-auto"
-                        style={{
-                            boxShadow: "rgba(0, 0, 0, 0.1) 0px 10px 30px 0px",
-                        }}
-                    >
-                        <svg
-                            ref={popupArrowRef}
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="28"
-                            height="8"
-                            className={classNames(
-                                "absolute translate-x-1/2",
-                                isArrowAbove ? "-top-[8px]" : "-bottom-[8px] rotate-180"
-                            )}
-                            color="var(--color-bg-modal)"
-                        >
-                            <path
-                                d="M 12.833 1.333 C 13.451 0.627 14.549 0.627 15.167 1.333 L 18.012 4.585 C 19.911 6.755 22.654 8 25.538 8 L 28 8 L 0 8 L 2.462 8 C 5.346 8 8.089 6.755 9.988 4.585 Z"
-                                fill="currentColor"
-                            ></path>
-                        </svg>
-                        <ImageButtons image={activeImage} row onButtonClick={() => changeActiveImage(null, null)} />
-                    </div>
+                <div className="flex-col gap-3 px-3">
+                    <div className="w-full h-px bg-divider shrink-0" />
+                    <ImageButtons image={activeImage} />
                 </div>
-            )}
+            </div>
         </div>
     )
 }
@@ -303,40 +253,62 @@ function TableHeading({ children, className }) {
     return <th className={classNames("text-tertiary hover:text-primary font-medium", className)}>{children}</th>
 }
 
-function TableRow({ row, columns, isLastRow = false, activeImage, changeActiveImage }) {
+function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, activeImage, changeActiveImage }) {
     const imageElements = useRef([])
+
+    const includesActiveImage = useMemo(() => {
+        return columns.some(columnName => {
+            return Array.isArray(row.columns?.[columnName]) && row.columns[columnName].includes(activeImage)
+        })
+    }, [row, columns, activeImage])
 
     return (
         <tr
             className={classNames(
-                "h-10 text-secondary hover:text-primary font-medium",
-                !isLastRow && "border-b border-divider"
+                "h-10 text-secondary hover:text-primary font-medium px-3 relative",
+                includesActiveImage && "text-primary bg-[#FCFCFC]"
             )}
         >
-            <td className="text-nowrap pr-3 max-w-[200px] truncate">{row.title}</td>
-            {columns.map(columnName => (
+            <td
+                className={classNames(
+                    "text-nowrap px-3 truncate",
+                    isCollectionMode ? "min-w-[200px] max-w-[300px]" : "max-w-[200px]"
+                )}
+            >
+                {row.title}
+                {!isLastRow && <div className="absolute inset-x-3 bottom-0 h-px bg-divider" />}
+            </td>
+            {columns.map((columnName, columnIndex) => (
                 <td>
                     <div className="flex-row gap-2 h-10">
                         {Array.isArray(row.columns?.[columnName])
                             ? row.columns[columnName].map((image, index) => (
                                   <div
-                                      className="flex-col center w-10 h-full shrink-0 cursor-pointer"
+                                      className={classNames("flex-col center h-full shrink-0 cursor-pointer", "w-10")}
                                       ref={el => (imageElements.current[index] = el)}
                                       onClick={() => changeActiveImage(image, imageElements.current[index])}
                                   >
                                       <div
                                           className={classNames(
-                                              "w-full h-[22px] relative rounded-[4px] overflow-hidden bg-secondary transition-transform",
-                                              activeImage === image && "scale-110"
+                                              "w-full h-[22px] relative rounded-[4px] bg-secondary transition-transform"
                                           )}
                                       >
-                                          <img
-                                              src={`${image.url}?scale-down-to=512`}
-                                              alt={image.altText}
-                                              className="size-full object-cover"
-                                              draggable={false}
-                                          />
-                                          <div className="absolute inset-0 border border-image-border rounded-[inherit]" />
+                                          {image && (
+                                              <>
+                                                  {activeImage === image && (
+                                                      <div className="absolute -inset-[3px] border border-tint rounded-[7px]">
+                                                          <div className="bg-tint rounded-[inherit] absolute inset-0 opacity-15" />
+                                                      </div>
+                                                  )}
+                                                  <img
+                                                      src={`${image.url}?scale-down-to=512`}
+                                                      alt={image.altText}
+                                                      className="size-full object-cover rounded-[inherit] relative"
+                                                      draggable={false}
+                                                  />
+                                                  <div className="absolute inset-0 border border-image-border rounded-[inherit]" />
+                                              </>
+                                          )}
                                       </div>
                                   </div>
                               ))
