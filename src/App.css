@@ -18,6 +18,7 @@ button {
     -webkit-appearance: button;
     background-color: var(--framer-color-bg-tertiary);
     background-image: none;
+    font-weight: 600;
 }
 
 ::-webkit-scrollbar {

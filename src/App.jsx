@@ -12,7 +12,7 @@ export function App() {
     useEffect(() => {
         framer.showUI({
             position: "top right",
-            width: 300,
+            width: 260,
             height: 300,
         })
     }, [])
@@ -54,25 +54,33 @@ export function App() {
     }
 
     return (
-        <main className="flex-col px-3 pb-3 gap-2 size-full overflow-hidden">
+        <main className="flex-col px-3 pb-3 gap-2 size-full overflow-hidden select-none">
             <div className="w-full flex-1 overflow-hidden bg-secondary rounded flex center">
                 {image ? (
-                    <img src={image.url} alt={image.altText} className="size-full object-contain" />
+                    <img src={image.url} alt={image.altText} className="size-full object-contain" draggable={false} />
                 ) : (
                     <span>Select an image</span>
                 )}
             </div>
-            <div className="flex-row gap-2">
-                <button disabled={!hasImage} onClick={onCopyImageClick} className="flex-1">
-                    Copy Image
-                </button>
-                <button disabled={!hasImage} onClick={onCopyImageUrlClick} className="flex-1">
-                    Copy URL
-                </button>
+            <div className="flex-row gap-2 w-full">
+                <div className="flex-col gap-2 flex-1">
+                    <button disabled={!hasImage} onClick={onCopyImageClick} className="">
+                        Copy Image
+                    </button>
+                    <button disabled={!hasImage} onClick={onCopyImageUrlClick} className="">
+                        Copy URL
+                    </button>
+                </div>
+                <div className="flex-col gap-2 flex-1">
+                    <button
+                        disabled={!hasImage}
+                        onClick={onDownloadImageClick}
+                        className="framer-button-primary h-full"
+                    >
+                        Download
+                    </button>
+                </div>
             </div>
-            <button disabled={!hasImage} onClick={onDownloadImageClick} className="framer-button-primary">
-                Download Image
-            </button>
         </main>
     )
 }
