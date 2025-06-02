@@ -6,8 +6,8 @@ export default {
         extend: {},
         backgroundColor: {
             primary: "var(--framer-color-bg)",
-            secondary: "var(--color-bg-secondary)",
-            tertiary: "var(--color-bg-tertiary)",
+            secondary: "var(--framer-color-bg-secondary)",
+            tertiary: "var(--framer-color-bg-tertiary)",
             divider: "var(--framer-color-divider)",
             "divider-secondary": "var(--color-divider-secondary)",
             tint: "var(--framer-color-tint)",

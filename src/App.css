@@ -14,6 +14,12 @@
     --color-image-border: rgba(255, 255, 255, 0.1);
 }
 
+button {
+    -webkit-appearance: button;
+    background-color: var(--framer-color-bg-tertiary);
+    background-image: none;
+}
+
 ::-webkit-scrollbar {
     display: none;
 }
