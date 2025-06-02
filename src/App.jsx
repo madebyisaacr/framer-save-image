@@ -7,43 +7,111 @@ import classNames from "classnames"
 export function App() {
     const selection = useSelection()
     const image = useImage()
+    const [collection, setCollection] = useState(null)
+    const [collectionItems, setCollectionItems] = useState([])
+    const [collectionFields, setCollectionFields] = useState([])
 
-    const rows = useMemo(() => {
-        let result = []
+    const [rows, columns, titleColumnName] = useMemo(() => {
+        const rows = []
+        const columns = []
+        let titleColumnName = ""
 
-        for (const node of selection) {
-            let nodeImages = []
-            let type = "frame"
-
-            if (isFrameNode(node)) {
-                if (isImageAsset(node.backgroundImage)) {
-                    nodeImages.push(node.backgroundImage)
+        if (framer.mode === "collection") {
+            if (collection && collectionFields.length > 0) {
+                let titleField = null
+                if (collection.slugFieldBasedOn) {
+                    titleField = collectionFields.find(field => field.id === collection.slugFieldBasedOn)
+                } else {
+                    titleField = collectionFields.find(field => field.name === "Title")
                 }
-            } else if (isComponentInstanceNode(node)) {
-                type = "component"
-                if (node.controls) {
-                    for (const value of Object.values(node.controls)) {
-                        if (isImageAsset(value)) {
-                            nodeImages.push(value)
+
+                if (titleField) {
+                    titleColumnName = titleField.name
+                }
+
+                for (const field of collectionFields) {
+                    if (field.type === "image") {
+                        columns.push(field.name)
+                    }
+                }
+
+                for (const item of collectionItems) {
+                    const columnValues = {}
+
+                    for (const field of collectionFields) {
+                        if (columns.indexOf(field.name) !== -1) {
+                            columnValues[field.name] = [item.fieldData[field.id]?.value]
+                        }
+                    }
+
+                    rows.push({
+                        id: item.id,
+                        title: item.fieldData[titleField.id]?.value,
+                        columns: columnValues,
+                    })
+                }
+            }
+        } else {
+            titleColumnName = "Name"
+            columns.push("Images")
+
+            for (const node of selection) {
+                let nodeImages = []
+                let type = "frame"
+
+                if (isFrameNode(node)) {
+                    if (isImageAsset(node.backgroundImage)) {
+                        nodeImages.push(node.backgroundImage)
+                    }
+                } else if (isComponentInstanceNode(node)) {
+                    type = "component"
+                    if (node.controls) {
+                        for (const value of Object.values(node.controls)) {
+                            if (isImageAsset(value)) {
+                                nodeImages.push(value)
+                            }
                         }
                     }
                 }
-            }
 
-            if (nodeImages.length > 0) {
-                result.push({
-                    id: node.id,
-                    node,
-                    images: nodeImages,
-                    type,
-                })
+                if (nodeImages.length > 0) {
+                    rows.push({
+                        id: node.id,
+                        title: node.name,
+                        columns: { Images: nodeImages },
+                        type,
+                    })
+                }
             }
         }
 
-        return result
-    }, [selection])
+        return [rows, columns, titleColumnName]
+    }, [selection, collection])
 
-    return image ? <SingleImageView image={image} /> : rows.length > 0 ? <Table rows={rows} /> : <SingleImageView />
+    useEffect(() => {
+        if (framer.mode === "collection") {
+            const updateCollection = async () => {
+                const collection = await framer.getActiveCollection()
+                const [items, fields] = await Promise.all([collection.getItems(), collection.getFields()])
+
+                setCollection(collection)
+                setCollectionItems(items)
+                setCollectionFields(fields)
+            }
+
+            updateCollection()
+        }
+    }, [])
+
+    return framer.mode === "collection" ? (
+        <Table rows={rows} columns={columns} titleColumnName={titleColumnName} />
+    ) : image ? (
+        <SingleImageView image={image} />
+    ) : rows.length > 0 ? (
+        <Table rows={rows} columns={columns} titleColumnName={titleColumnName} />
+    ) : (
+        <SingleImageView />
+    )
 }
 
 function SingleImageView({ image }) {
@@ -69,7 +137,7 @@ function SingleImageView({ image }) {
     )
 }
 
-function Table({ rows }) {
+function Table({ rows, columns, titleColumnName }) {
     const tableRef = useRef(null)
     const popupContainerRef = useRef(null)
     const popupRef = useRef(null)
@@ -78,7 +146,23 @@ function Table({ rows }) {
     const [activeImage, setActiveImage] = useState(null)
     const [activeImageElement, setActiveImageElement] = useState(null)
 
-    const activeImageIndex = activeImage ? rows.findIndex(row => row.images.includes(activeImage)) : -1
+    const flattenedRowImages = useMemo(() => {
+        return Array.isArray(rows)
+            ? rows.map(row => {
+                  const images = []
+
+                  for (const columnName of Object.keys(row.columns)) {
+                      if (Array.isArray(row.columns[columnName])) {
+                          images.push(...row.columns[columnName])
+                      }
+                  }
+
+                  return images
+              })
+            : []
+    }, [rows])
+
+    const activeImageIndex = activeImage ? flattenedRowImages.findIndex(row => row.includes(activeImage)) : -1
     const isArrowAbove = activeImage ? (rows.length === 1 ? true : activeImageIndex !== rows.length - 1) : true
 
     function changeActiveImage(image, element) {
@@ -97,11 +181,19 @@ function Table({ rows }) {
 
         const updateSize = () => {
             if (!tableRef.current) return
+
+            // if (framer.mode === "collection") {
+            //     framer.showUI({
+            //         width: 600,
+            //         height: 500,
+            //     })
+            // } else {
             framer.showUI({
                 position: "top right",
                 width: Math.max(Math.min(tableRef.current.offsetWidth, 600), 260),
                 height: Math.max(Math.min(tableRef.current.offsetHeight, 500), 158),
             })
+            // }
 
             if (activeImage) {
                 const rect = activeImageElement.getBoundingClientRect()
@@ -148,8 +240,10 @@ function Table({ rows }) {
                 <table>
                     <thead className="h-10 text-left">
                         <tr className="border-b border-t border-divider">
-                            <TableHeading className="min-w-[100px]">Name</TableHeading>
-                            <TableHeading>Images</TableHeading>
+                            <TableHeading className="min-w-[100px]">{titleColumnName}</TableHeading>
+                            {columns.map((column, index) => (
+                                <TableHeading key={column}>{column}</TableHeading>
+                            ))}
                         </tr>
                     </thead>
                     <tbody>
@@ -157,6 +251,7 @@ function Table({ rows }) {
                             <TableRow
                                 key={row.id}
                                 row={row}
+                                columns={columns}
                                 isLastRow={index === rows.length - 1}
                                 activeImage={activeImage}
                                 changeActiveImage={changeActiveImage}
@@ -208,43 +303,47 @@ function TableHeading({ children, className }) {
     return <th className={classNames("text-tertiary hover:text-primary font-medium", className)}>{children}</th>
 }
 
-function TableRow({ row, isLastRow = false, activeImage, changeActiveImage }) {
+function TableRow({ row, columns, isLastRow = false, activeImage, changeActiveImage }) {
     const imageElements = useRef([])
 
     return (
         <tr
             className={classNames(
-                "h-10 text-tertiary hover:text-primary font-medium",
+                "h-10 text-secondary hover:text-primary font-medium",
                 !isLastRow && "border-b border-divider"
             )}
         >
-            <td className="text-nowrap pr-3 max-w-[200px] truncate">{row.node.name}</td>
-            <td>
-                <div className="flex-row gap-2 h-10">
-                    {row.images.map((image, index) => (
-                        <div
-                            className="flex-col center w-10 h-full shrink-0 cursor-pointer"
-                            ref={el => (imageElements.current[index] = el)}
-                            onClick={() => changeActiveImage(image, imageElements.current[index])}
-                        >
-                            <div
-                                className={classNames(
-                                    "w-full h-[22px] relative rounded-[4px] overflow-hidden bg-secondary transition-transform",
-                                    activeImage === image && "scale-110"
-                                )}
-                            >
-                                <img
-                                    src={`${image.url}?scale-down-to=512`}
-                                    alt={image.altText}
-                                    className="size-full object-cover"
-                                    draggable={false}
-                                />
-                                <div className="absolute inset-0 border border-image-border rounded-[inherit]" />
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </td>
+            <td className="text-nowrap pr-3 max-w-[200px] truncate">{row.title}</td>
+            {columns.map(columnName => (
+                <td>
+                    <div className="flex-row gap-2 h-10">
+                        {Array.isArray(row.columns?.[columnName])
+                            ? row.columns[columnName].map((image, index) => (
+                                  <div
+                                      className="flex-col center w-10 h-full shrink-0 cursor-pointer"
+                                      ref={el => (imageElements.current[index] = el)}
+                                      onClick={() => changeActiveImage(image, imageElements.current[index])}
+                                  >
+                                      <div
+                                          className={classNames(
+                                              "w-full h-[22px] relative rounded-[4px] overflow-hidden bg-secondary transition-transform",
+                                              activeImage === image && "scale-110"
+                                          )}
+                                      >
+                                          <img
+                                              src={`${image.url}?scale-down-to=512`}
+                                              alt={image.altText}
+                                              className="size-full object-cover"
+                                              draggable={false}
+                                          />
+                                          <div className="absolute inset-0 border border-image-border rounded-[inherit]" />
+                                      </div>
+                                  </div>
+                              ))
+                            : null}
+                    </div>
+                </td>
+            ))}
         </tr>
     )
 }
