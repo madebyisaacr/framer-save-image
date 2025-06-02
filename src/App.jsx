@@ -73,14 +73,17 @@ function SingleImageView({ image }) {
 
     return (
         <main className="flex-col px-3 pb-3 gap-2 w-full overflow-hidden select-none">
-            <div className="w-full overflow-hidden bg-tertiary dark:bg-secondary rounded flex center">
+            <div className="w-full overflow-hidden bg-tertiary dark:bg-secondary rounded flex center relative">
                 {image ? (
-                    <img
-                        src={`${image.url}?scale-down-to=512`}
-                        alt={image.altText}
-                        className="w-full object-contain max-h-[400px] min-h-10"
-                        draggable={false}
-                    />
+                    <>
+                        <img
+                            src={`${image.url}?scale-down-to=512`}
+                            alt={image.altText}
+                            className="w-full object-contain max-h-[400px] min-h-10"
+                            draggable={false}
+                        />
+                        <div className="absolute inset-0 border border-image-border rounded-[inherit]" />
+                    </>
                 ) : (
                     <span className="text-secondary w-full aspect-video flex-col center gap-2">
                         <div className="size-[22px] relative flex center">
