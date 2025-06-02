@@ -22,24 +22,24 @@ export function App() {
                 }
             } else if (isComponentInstanceNode(node)) {
                 type = "component"
-                if (node.controls) {
-                    // Create a Set to track unique image IDs
-                    const uniqueImageIds = new Set()
-
-                    for (const value of Object.values(node.controls)) {
-                        if (isImageAsset(value) && !uniqueImageIds.has(value.id)) {
-                            uniqueImageIds.add(value.id)
-                            nodeImages.push(value)
-                        }
-                    }
-                }
+                nodeImages = getImageAssets(node.controls)
             }
 
             if (nodeImages.length > 0) {
+                // Remove duplicate images by id (or by reference if no id)
+                const uniqueImages = []
+                const seen = new Set()
+                for (const img of nodeImages) {
+                    const key = img && img.id ? img.id : img
+                    if (!seen.has(key)) {
+                        seen.add(key)
+                        uniqueImages.push(img)
+                    }
+                }
                 rows.push({
                     id: node.id,
                     title: node.name,
-                    columns: { Images: nodeImages },
+                    columns: { Images: uniqueImages },
                     type,
                 })
             }
@@ -443,7 +443,7 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
             </td>
             {columns.map((columnName, columnIndex) => (
                 <td key={`${row.id}-${columnName}-${columnIndex}`}>
-                    <div className="flex-row gap-2 pr-3 flex-wrap max-w-[245px] py-[14px]">
+                    <div className="flex-row gap-2 pr-3 flex-wrap max-w-[185px] py-[14px]">
                         {Array.isArray(row.columns?.[columnName])
                             ? row.columns[columnName].map((image, index) => (
                                   <div
@@ -640,7 +640,7 @@ function Icon({ type = "image", active = false }) {
     return (
         <div
             className={classNames(
-                "group-hover:text-primary transition-colors shrink-0",
+                "group-hover:text-primary shrink-0",
                 active ? "text-primary" : "text-tertiary"
             )}
         >
@@ -672,4 +672,31 @@ function Icon({ type = "image", active = false }) {
 
 function Spinner() {
     return <div className="framer-spinner" />
+}
+
+function getImageAssets(object, level = 0) {
+    if (!object) return []
+
+    // Prevent infinite recursion
+    if (level > 5) return []
+
+    const imageAssets = []
+
+    if (isImageAsset(object)) {
+        imageAssets.push(object)
+    } else if (Array.isArray(object)) {
+        for (const item of object) {
+            if (typeof item === "object") {
+                imageAssets.push(...getImageAssets(item, level + 1))
+            }
+        }
+    } else if (typeof object === "object") {
+        for (const key in object) {
+            if (typeof object[key] === "object") {
+                imageAssets.push(...getImageAssets(object[key], level + 1))
+            }
+        }
+    }
+
+    return imageAssets
 }
