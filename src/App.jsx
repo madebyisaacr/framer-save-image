@@ -276,25 +276,6 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
 
     const ref = useRef(null)
 
-    // Auto-select first image when entering table view in canvas mode
-    useEffect(() => {
-        if (framer.mode === "canvas" && !isCollectionMode && rows.length > 0 && !activeSelection.nodeId) {
-            // Find first row with images
-            for (const row of rows) {
-                for (const columnName of columns) {
-                    const images = row.columns?.[columnName]
-                    if (Array.isArray(images) && images.length > 0) {
-                        const firstImage = images[0]
-                        // We'll set the activeImageElement in the next render cycle
-                        setActiveSelection({ nodeId: row.id, imageId: firstImage.id })
-                        break
-                    }
-                }
-                if (activeSelection.nodeId) break
-            }
-        }
-    }, [rows, columns, isCollectionMode])
-
     // Find the active image from the rows based on the stored IDs
     const activeImage = useMemo(() => {
         if (!activeSelection.nodeId || !activeSelection.imageId) return null
@@ -435,7 +416,7 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
         <tr
             className={classNames(
                 "text-secondary group hover:text-primary font-medium px-3 relative",
-                includesActiveImage && "text-primary bg-[#FCFCFC] dark:bg-[#161616]"
+                includesActiveImage && "bg-[#FCFCFC] dark:bg-[#161616]"
             )}
         >
             <td
@@ -445,9 +426,9 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
                 )}
                 onClick={handleTitleClick}
             >
-                <div className="flex-row gap-2.5 items-center overflow-hidden h-10">
+                <div className="flex-row gap-2.5 items-center overflow-hidden h-10 w-full">
                     <Icon type={row.type} active={includesActiveImage} />
-                    <span className="truncate">{row.title}</span>
+                    <span className={classNames("truncate", includesActiveImage && "text-primary")}>{row.title}</span>
                 </div>
                 {!isLastRow && <div className="absolute inset-x-3 bottom-0 h-px bg-divider" />}
             </td>
@@ -589,8 +570,8 @@ function Icon({ type = "image", active = false }) {
     return (
         <div
             className={classNames(
-                "text-tertiary group-hover:text-primary transition-colors shrink-0",
-                active && "text-primary"
+                "group-hover:text-primary transition-colors shrink-0",
+                active ? "text-primary" : "text-tertiary"
             )}
         >
             {type === "page" ? (
