@@ -78,7 +78,22 @@ function SingleImageView({ image }) {
                         draggable={false}
                     />
                 ) : (
-                    <span className="text-secondary w-full aspect-video flex center">Select an image</span>
+                    <span className="text-secondary w-full aspect-video flex-col center gap-2">
+                        <div className="size-[22px] relative flex center">
+                            <div className="absolute inset-0 rounded-[4px] bg-[var(--framer-color-text)] opacity-15" />
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" className="text-secondary">
+                                <path
+                                    d="M 10.838 9.29 C 10.444 8.683 9.556 8.683 9.162 9.29 L 4.504 16.455 C 4.072 17.12 4.549 18 5.343 18 L 14.657 18 C 15.451 18 15.928 17.12 15.496 16.455 Z"
+                                    fill="currentColor"
+                                ></path>
+                                <path
+                                    d="M 16 4 C 17.105 4 18 4.895 18 6 C 18 7.105 17.105 8 16 8 C 14.895 8 14 7.105 14 6 C 14 4.895 14.895 4 16 4 Z"
+                                    fill="currentColor"
+                                ></path>
+                            </svg>
+                        </div>
+                        Select an image
+                    </span>
                 )}
             </div>
             <ImageButtons image={image} />
@@ -195,7 +210,7 @@ function CollectionTable() {
         <div
             ref={ref}
             className={classNames(
-                "flex-col max-h-[500px]",
+                "flex-col max-h-[500px] select-none",
                 isLoading || columns.length === 0 ? "w-full size-full" : "w-max"
             )}
         >
@@ -442,7 +457,10 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
                         {Array.isArray(row.columns?.[columnName])
                             ? row.columns[columnName].map((image, index) => (
                                   <div
-                                      className={classNames("flex-col center h-full shrink-0 cursor-pointer", "w-10")}
+                                      className={classNames(
+                                          "flex-col center h-full shrink-0 w-10",
+                                          image && "cursor-pointer"
+                                      )}
                                       ref={el => (imageElements.current[index] = el)}
                                       onClick={() => changeActiveImage(image, imageElements.current[index], row.id)}
                                   >
