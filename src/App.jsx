@@ -435,7 +435,9 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
             >
                 <div className="flex-row gap-2.5 items-center overflow-hidden h-10 w-full">
                     <Icon type={row.type} active={includesActiveImage} />
-                    <span className={classNames("truncate", includesActiveImage && "text-primary")}>{row.title}</span>
+                    <span className={classNames("truncate", includesActiveImage && "text-primary")} title={row.title}>
+                        {row.title}
+                    </span>
                 </div>
                 {!isLastRow && <div className="absolute inset-x-3 bottom-0 h-px bg-divider" />}
             </td>
