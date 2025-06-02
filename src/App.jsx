@@ -130,8 +130,14 @@ function CollectionTable() {
             let titleField = null
             if (collection.slugFieldBasedOn) {
                 titleField = collectionFields.find(field => field.id === collection.slugFieldBasedOn)
-            } else {
+            }
+
+            if (!titleField) {
                 titleField = collectionFields.find(field => field.name === "Title")
+            }
+
+            if (!titleField) {
+                titleField = collectionFields.find(field => field.type === "string")
             }
 
             if (titleField) {
@@ -165,7 +171,7 @@ function CollectionTable() {
     }, [collection, collectionFields, collectionItems, isLoading])
 
     return (
-        <div ref={ref} className="flex-col">
+        <div ref={ref} className="flex-col min-w-max">
             {collections.length > 1 && (
                 <div className="flex-col px-3 pb-3">
                     <select
@@ -173,6 +179,9 @@ function CollectionTable() {
                         onChange={e => setCollection(collections.find(c => c.id === e.target.value))}
                         className="w-full pl-2"
                     >
+                        <option value="" disabled>
+                            Select a collection...
+                        </option>
                         {collections.map(collection => (
                             <option key={collection.id} value={collection.id}>
                                 {collection.name}
@@ -257,7 +266,7 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
     }, [activeImage])
 
     return (
-        <div ref={ref} className="overflow-auto h-full flex-col select-none relative">
+        <div ref={ref} className="overflow-auto flex-col select-none relative min-w-max">
             <div className="flex-col pb-3 min-w-max">
                 <table>
                     <thead className="h-10 text-left">
@@ -326,7 +335,7 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
             </td>
             {columns.map((columnName, columnIndex) => (
                 <td>
-                    <div className="flex-row gap-2 h-10">
+                    <div className="flex-row gap-2 h-10 pr-3">
                         {Array.isArray(row.columns?.[columnName])
                             ? row.columns[columnName].map((image, index) => (
                                   <div
