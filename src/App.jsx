@@ -6,109 +6,100 @@ import { useDynamicPluginHeight } from "./useDynamicPluginHeight"
 import classNames from "classnames"
 
 export function App() {
+    return framer.mode === "collection" ? <CollectionView /> : <CanvasView />
+}
+
+function CanvasView() {
     const selection = useSelection()
     const image = useImage()
 
-    const rows = useMemo(() => {
-        const rows = []
+    useDynamicPluginHeight({
+        position: "top right",
+        width: framer.mode === "editImage" ? 400 : 260,
+    })
 
-        for (const node of selection) {
-            let nodeImages = []
-            let type = "image"
+    const images = useMemo(() => {
+        if (framer.mode === "editImage") {
+            return [image]
+        } else {
+            const allImages = []
 
-            if (isFrameNode(node)) {
-                if (isImageAsset(node.backgroundImage)) {
-                    nodeImages.push(node.backgroundImage)
+            for (const node of selection) {
+                if (isFrameNode(node)) {
+                    if (isImageAsset(node.backgroundImage)) {
+                        allImages.push(node.backgroundImage)
+                    }
+                } else if (isComponentInstanceNode(node)) {
+                    allImages.push(...getImageAssets(node.controls))
                 }
-            } else if (isComponentInstanceNode(node)) {
-                type = "component"
-                nodeImages = getImageAssets(node.controls)
             }
 
-            if (nodeImages.length > 0) {
+            const uniqueImages = []
+
+            if (allImages.length > 0) {
                 // Remove duplicate images by id (or by reference if no id)
-                const uniqueImages = []
                 const seen = new Set()
-                for (const img of nodeImages) {
+                for (const img of allImages) {
                     const key = img && img.id ? img.id : img
                     if (!seen.has(key)) {
                         seen.add(key)
                         uniqueImages.push(img)
                     }
                 }
-                rows.push({
-                    id: node.id,
-                    title: node.name,
-                    columns: { Images: uniqueImages },
-                    type,
-                })
             }
+
+            return uniqueImages
         }
-
-        return rows
     }, [selection])
-
-    const singleImage =
-        image ||
-        (rows.length === 1 ? (rows[0].columns?.Images?.length === 1 ? rows[0].columns?.Images[0] : null) : null)
-
-    return framer.mode === "collection" ? (
-        <CollectionTable />
-    ) : singleImage ? (
-        <SingleImageView image={singleImage} />
-    ) : rows.length > 0 ? (
-        <div className="flex-col max-h-[500px]">
-            <Table rows={rows} columns={["Images"]} titleColumnName="Name" />
-        </div>
-    ) : (
-        <SingleImageView />
-    )
-}
-
-function SingleImageView({ image }) {
-    useDynamicPluginHeight({
-        position: "top right",
-        width: framer.mode === "editImage" ? 400 : 260,
-    })
 
     return (
         <main className="flex-col px-3 pb-3 gap-2 w-full overflow-hidden select-none">
-            <div className="w-full overflow-hidden bg-tertiary dark:bg-secondary rounded flex center relative">
-                {image ? (
-                    <>
-                        <img
-                            src={`${image.url}?scale-down-to=512`}
-                            alt={image.altText}
-                            className="w-full object-contain max-h-[400px] min-h-10"
-                            draggable={false}
-                        />
-                        <div className="absolute inset-0 border border-image-border rounded-[inherit]" />
-                    </>
-                ) : (
-                    <span className="text-secondary w-full aspect-video flex-col center gap-2">
-                        <div className="size-[22px] relative flex center">
-                            <div className="absolute inset-0 rounded-[4px] bg-[var(--framer-color-text)] opacity-15" />
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" className="text-secondary">
-                                <path
-                                    d="M 10.838 9.29 C 10.444 8.683 9.556 8.683 9.162 9.29 L 4.504 16.455 C 4.072 17.12 4.549 18 5.343 18 L 14.657 18 C 15.451 18 15.928 17.12 15.496 16.455 Z"
-                                    fill="currentColor"
-                                ></path>
-                                <path
-                                    d="M 16 4 C 17.105 4 18 4.895 18 6 C 18 7.105 17.105 8 16 8 C 14.895 8 14 7.105 14 6 C 14 4.895 14.895 4 16 4 Z"
-                                    fill="currentColor"
-                                ></path>
-                            </svg>
-                        </div>
-                        Select an image
-                    </span>
-                )}
-            </div>
+            {images.length === 1 ? (
+                <ImageItem image={images[0]} />
+            ) : images.length > 0 ? (
+                <div className="grid grid-cols-2 gap-2 w-full overflow-y-auto">
+                    {images.map(image => (
+                        <ImageItem key={image.id} image={image} />
+                    ))}
+                </div>
+            ) : (
+                <span className="w-full overflow-hidden bg-tertiary dark:bg-secondary rounded flex center relative text-secondary aspect-video flex-col center gap-2">
+                    <div className="size-[22px] relative flex center">
+                        <div className="absolute inset-0 rounded-[4px] bg-[var(--framer-color-text)] opacity-15" />
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" className="text-secondary">
+                            <path
+                                d="M 10.838 9.29 C 10.444 8.683 9.556 8.683 9.162 9.29 L 4.504 16.455 C 4.072 17.12 4.549 18 5.343 18 L 14.657 18 C 15.451 18 15.928 17.12 15.496 16.455 Z"
+                                fill="currentColor"
+                            ></path>
+                            <path
+                                d="M 16 4 C 17.105 4 18 4.895 18 6 C 18 7.105 17.105 8 16 8 C 14.895 8 14 7.105 14 6 C 14 4.895 14.895 4 16 4 Z"
+                                fill="currentColor"
+                            ></path>
+                        </svg>
+                    </div>
+                    Select an image
+                </span>
+            )}
             <ImageButtons image={image} />
         </main>
     )
 }
 
-function CollectionTable() {
+function ImageItem({ image }) {
+    return (
+        <div className="w-full overflow-hidden bg-tertiary dark:bg-secondary rounded flex center relative">
+            <img
+                src={`${image.url}?scale-down-to=512`}
+                alt={image.altText}
+                className="w-full object-contain max-h-[400px] min-h-10"
+                draggable={false}
+            />
+            <div className="absolute inset-0 border border-image-border rounded-[inherit]" />
+        </div>
+    )
+}
+
+function CollectionView() {
     const ref = useRef(null)
 
     const [collection, setCollection] = useState(null)
