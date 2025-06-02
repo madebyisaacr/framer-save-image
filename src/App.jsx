@@ -59,7 +59,7 @@ export function App() {
                 {image ? (
                     <img src={image.url} alt={image.altText} className="size-full object-contain" draggable={false} />
                 ) : (
-                    <span>Select an image</span>
+                    <span className="text-tertiary">Select an image</span>
                 )}
             </div>
             <div className="flex-row gap-2 w-full">
@@ -89,7 +89,9 @@ function useSelection() {
     const [selection, setSelection] = useState([])
 
     useEffect(() => {
-        return framer.subscribeToSelection(setSelection)
+        if (framer.mode === "canvas") {
+            return framer.subscribeToSelection(setSelection)
+        }
     }, [])
 
     return selection
@@ -99,7 +101,9 @@ function useImage() {
     const [image, setImage] = useState(null)
 
     useEffect(() => {
-        return framer.subscribeToImage(setImage)
+        if (framer.mode === "canvas" || framer.mode === "editImage") {
+            return framer.subscribeToImage(setImage)
+        }
     }, [])
 
     return image
