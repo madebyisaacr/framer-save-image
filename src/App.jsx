@@ -1,13 +1,12 @@
 import { framer, isFrameNode, isComponentInstanceNode, isImageAsset } from "framer-plugin"
-import { useState, useEffect, useMemo, useRef, memo, useDeferredValue } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import "./App.css"
 import { copyToClipboard, downloadFile } from "./utils"
 import { useDynamicPluginHeight } from "./useDynamicPluginHeight"
 import classNames from "classnames"
 
-const sidePadding = 0
-const columnGap = 10
-const minColumnWidth = 110
+const COLUMN_COUNT = 2
+const COLUMN_WIDTH = 110
 
 function useImageDimensions(images) {
     const [dimensions, setDimensions] = useState({})
@@ -47,14 +46,14 @@ function useImageDimensions(images) {
     return dimensions
 }
 
-function calculateImageHeight(image, columnWidth, dimensions) {
+function calculateImageHeight(image, dimensions) {
     const dim = dimensions[image.id]
     if (dim && dim.width && dim.height) {
-        return (columnWidth * dim.height) / dim.width
+        return (COLUMN_WIDTH * dim.height) / dim.width
     }
     // fallback
     const defaultAspectRatio = 4 / 3
-    return columnWidth / defaultAspectRatio
+    return COLUMN_WIDTH / defaultAspectRatio
 }
 
 export function App() {
@@ -65,24 +64,12 @@ function CanvasView() {
     const selection = useSelection()
     const image = useImage()
     const scrollRef = useRef(null)
-    const [windowSize, setWindowSize] = useState(window.innerWidth)
-    const deferredWindowSize = useDeferredValue(windowSize)
     const [selectedImageId, setSelectedImageId] = useState(null)
 
     useDynamicPluginHeight({
         position: "top right",
         width: framer.mode === "editImage" ? 400 : 260,
     })
-
-    useEffect(() => {
-        const handleResize = () => {
-            setWindowSize(window.innerWidth)
-        }
-
-        handleResize()
-        window.addEventListener("resize", handleResize)
-        return () => window.removeEventListener("resize", handleResize)
-    }, [])
 
     const images = useMemo(() => {
         if (framer.mode === "editImage") {
@@ -130,25 +117,21 @@ function CanvasView() {
 
     const dimensions = useImageDimensions(images)
 
-    const [imageColumns, columnWidth] = useMemo(() => {
-        const adjustedWindowSize = deferredWindowSize - sidePadding
-        const columnCount = Math.max(1, Math.floor((adjustedWindowSize + columnGap) / (minColumnWidth + columnGap)))
-        const columnWidth = minColumnWidth
-        const heightPerColumn = Array(columnCount).fill(0)
+    const imageColumns = useMemo(() => {
+        const heightPerColumn = Array(COLUMN_COUNT).fill(0)
+        const columns = Array.from({ length: COLUMN_COUNT }, () => [])
 
-        const columns = Array.from({ length: columnCount }, () => [])
-
-        if (!images.length) return [columns, columnWidth]
+        if (!images.length) return columns
 
         for (const img of images) {
-            const itemHeight = calculateImageHeight(img, columnWidth, dimensions)
+            const itemHeight = calculateImageHeight(img, COLUMN_WIDTH, dimensions)
             const minColumnIndex = heightPerColumn.indexOf(Math.min(...heightPerColumn))
             columns[minColumnIndex].push(img)
             heightPerColumn[minColumnIndex] += itemHeight
         }
 
-        return [columns, columnWidth]
-    }, [images, deferredWindowSize, dimensions])
+        return columns
+    }, [images, dimensions])
 
     return (
         <main className="flex-col px-3 gap-3 w-full overflow-hidden select-none">
@@ -158,18 +141,14 @@ function CanvasView() {
                 <div ref={scrollRef} className="relative flex-1 rounded pt-3">
                     <div className="absolute inset-x-0 top-0 h-px bg-divider" />
                     <div className="relative">
-                        <div className="flex gap-2">
+                        <div className="flex-row gap-2">
                             {imageColumns.map((columnImages, i) => (
-                                <div
-                                    key={`column-${i}`}
-                                    className="flex-shrink-0 flex flex-col gap-2"
-                                    style={{ width: columnWidth }}
-                                >
+                                <div key={`column-${i}`} className="flex-col gap-2 flex-1">
                                     {columnImages.map(image => (
                                         <ImageItem
                                             key={image.id}
                                             image={image}
-                                            height={calculateImageHeight(image, columnWidth, dimensions)}
+                                            height={calculateImageHeight(image, dimensions)}
                                             selected={selectedImageId === image.id}
                                             onClick={() =>
                                                 setSelectedImageId(selectedImageId === image.id ? null : image.id)
