@@ -9,54 +9,6 @@ const COLUMN_COUNT = 2
 const COLUMN_WIDTH = 110
 const MAX_IMAGES_CANVAS = 100
 
-function useImageDimensions(images) {
-    const [dimensions, setDimensions] = useState({})
-
-    useEffect(() => {
-        let isMounted = true
-        const newDimensions = {}
-
-        const promises = images.map(image => {
-            return new Promise(resolve => {
-                if (image && image.width && image.height) {
-                    newDimensions[image.id] = { width: image.width, height: image.height }
-                    resolve()
-                } else if (image && image.url) {
-                    const img = new window.Image()
-                    img.onload = () => {
-                        newDimensions[image.id] = { width: img.naturalWidth, height: img.naturalHeight }
-                        resolve()
-                    }
-                    img.onerror = () => resolve()
-                    img.src = image.url
-                } else {
-                    resolve()
-                }
-            })
-        })
-
-        Promise.all(promises).then(() => {
-            if (isMounted) setDimensions(newDimensions)
-        })
-
-        return () => {
-            isMounted = false
-        }
-    }, [images])
-
-    return dimensions
-}
-
-function calculateImageHeight(image, dimensions) {
-    const dim = dimensions[image.id]
-    if (dim && dim.width && dim.height) {
-        return (COLUMN_WIDTH * dim.height) / dim.width
-    }
-    // fallback
-    const defaultAspectRatio = 4 / 3
-    return COLUMN_WIDTH / defaultAspectRatio
-}
-
 export function App() {
     return framer.mode === "collection" ? <CollectionView /> : <CanvasView />
 }
@@ -757,6 +709,10 @@ function ImageButtons({ image, onButtonClick = null }) {
     )
 }
 
+function Spinner() {
+    return <div className="framer-spinner" />
+}
+
 function useSelection() {
     const [selection, setSelection] = useState([])
 
@@ -781,8 +737,52 @@ function useImage() {
     return image
 }
 
-function Spinner() {
-    return <div className="framer-spinner" />
+function useImageDimensions(images) {
+    const [dimensions, setDimensions] = useState({})
+
+    useEffect(() => {
+        let isMounted = true
+        const newDimensions = {}
+
+        const promises = images.map(image => {
+            return new Promise(resolve => {
+                if (image && image.width && image.height) {
+                    newDimensions[image.id] = { width: image.width, height: image.height }
+                    resolve()
+                } else if (image && image.url) {
+                    const img = new window.Image()
+                    img.onload = () => {
+                        newDimensions[image.id] = { width: img.naturalWidth, height: img.naturalHeight }
+                        resolve()
+                    }
+                    img.onerror = () => resolve()
+                    img.src = image.url
+                } else {
+                    resolve()
+                }
+            })
+        })
+
+        Promise.all(promises).then(() => {
+            if (isMounted) setDimensions(newDimensions)
+        })
+
+        return () => {
+            isMounted = false
+        }
+    }, [images])
+
+    return dimensions
+}
+
+function calculateImageHeight(image, dimensions) {
+    const dim = dimensions[image.id]
+    if (dim && dim.width && dim.height) {
+        return (COLUMN_WIDTH * dim.height) / dim.width
+    }
+    // fallback
+    const defaultAspectRatio = 4 / 3
+    return COLUMN_WIDTH / defaultAspectRatio
 }
 
 function getImageAssets(object, level = 0) {
