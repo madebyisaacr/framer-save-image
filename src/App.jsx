@@ -148,54 +148,66 @@ function CanvasView() {
     return (
         <div className="flex-col w-full relative">
             {images.length > 1 && <div className="absolute inset-x-3 top-0 h-px bg-divider z-10" />}
-            <main className="flex-col px-3 gap-3 w-full overflow-y-auto max-h-[500px] select-none">
-                {images.length === 1 ? (
-                    <ImageItem image={images[0]} useDimensions={false} />
-                ) : images.length > 0 ? (
-                    <div ref={scrollRef} className="relative flex-1 rounded pt-3">
-                        <div className="relative">
-                            <div className="flex-row gap-2">
-                                {imageColumns.map((columnImages, i) => (
-                                    <div key={`column-${i}`} className="flex-col gap-2 flex-1">
-                                        {columnImages.map(image => (
-                                            <ImageItem
-                                                key={image.id}
-                                                image={image}
-                                                height={
-                                                    dimensions[image.id] ? calculateImageHeight(image, dimensions) : 100
-                                                }
-                                                useDimensions={true}
-                                                selected={selectedImageId === image.id}
-                                                onClick={() =>
-                                                    setSelectedImageId(selectedImageId === image.id ? null : image.id)
-                                                }
-                                            />
-                                        ))}
-                                    </div>
-                                ))}
+            <main className="flex-col gap-3 w-full overflow-y-auto max-h-[500px] select-none">
+                <div className="flex-col w-full px-3">
+                    {images.length === 1 ? (
+                        <ImageItem image={images[0]} useDimensions={false} />
+                    ) : images.length > 0 ? (
+                        <div ref={scrollRef} className="relative flex-1 rounded pt-3">
+                            <div className="relative">
+                                <div className="flex-row gap-2">
+                                    {imageColumns.map((columnImages, i) => (
+                                        <div key={`column-${i}`} className="flex-col gap-2 flex-1">
+                                            {columnImages.map(image => (
+                                                <ImageItem
+                                                    key={image.id}
+                                                    image={image}
+                                                    height={
+                                                        dimensions[image.id]
+                                                            ? calculateImageHeight(image, dimensions)
+                                                            : 100
+                                                    }
+                                                    dimensionsLoaded={dimensions[image.id] ? true : false}
+                                                    useDimensions={true}
+                                                    selected={selectedImageId === image.id}
+                                                    onClick={() =>
+                                                        setSelectedImageId(
+                                                            selectedImageId === image.id ? null : image.id
+                                                        )
+                                                    }
+                                                />
+                                            ))}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ) : (
-                    <span className="w-full overflow-hidden bg-tertiary dark:bg-secondary rounded flex center relative text-secondary aspect-video flex-col center gap-2">
-                        <div className="size-[22px] relative flex center">
-                            <div className="absolute inset-0 rounded-[4px] bg-[var(--framer-color-text)] opacity-15" />
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" className="text-secondary">
-                                <path
-                                    d="M 10.838 9.29 C 10.444 8.683 9.556 8.683 9.162 9.29 L 4.504 16.455 C 4.072 17.12 4.549 18 5.343 18 L 14.657 18 C 15.451 18 15.928 17.12 15.496 16.455 Z"
-                                    fill="currentColor"
-                                ></path>
-                                <path
-                                    d="M 16 4 C 17.105 4 18 4.895 18 6 C 18 7.105 17.105 8 16 8 C 14.895 8 14 7.105 14 6 C 14 4.895 14.895 4 16 4 Z"
-                                    fill="currentColor"
-                                ></path>
-                            </svg>
-                        </div>
-                        Select an image
-                    </span>
-                )}
-                <div className="flex-col gap-3 py-3 sticky bottom-0 bg-primary">
-                    <div className="absolute inset-x-0 top-0 h-px bg-divider" />
+                    ) : (
+                        <span className="w-full overflow-hidden bg-tertiary dark:bg-secondary rounded flex center relative text-secondary aspect-video flex-col center gap-2">
+                            <div className="size-[22px] relative flex center">
+                                <div className="absolute inset-0 rounded-[4px] bg-[var(--framer-color-text)] opacity-15" />
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="22"
+                                    height="22"
+                                    className="text-secondary"
+                                >
+                                    <path
+                                        d="M 10.838 9.29 C 10.444 8.683 9.556 8.683 9.162 9.29 L 4.504 16.455 C 4.072 17.12 4.549 18 5.343 18 L 14.657 18 C 15.451 18 15.928 17.12 15.496 16.455 Z"
+                                        fill="currentColor"
+                                    ></path>
+                                    <path
+                                        d="M 16 4 C 17.105 4 18 4.895 18 6 C 18 7.105 17.105 8 16 8 C 14.895 8 14 7.105 14 6 C 14 4.895 14.895 4 16 4 Z"
+                                        fill="currentColor"
+                                    ></path>
+                                </svg>
+                            </div>
+                            Select an image
+                        </span>
+                    )}
+                </div>
+                {images.length > 1 && <div className="relative w-full mx-3 h-px bg-divider" />}
+                <div className="flex-col gap-3 px-3 pb-3 sticky bottom-0 bg-primary">
                     <ImageButtons image={selectedImage} />
                 </div>
             </main>
@@ -203,7 +215,14 @@ function CanvasView() {
     )
 }
 
-function ImageItem({ image, height, useDimensions = false, selected = false, onClick = null }) {
+function ImageItem({
+    image,
+    height,
+    dimensionsLoaded = false,
+    useDimensions = false,
+    selected = false,
+    onClick = null,
+}) {
     return (
         <div
             className={classNames(
@@ -218,7 +237,7 @@ function ImageItem({ image, height, useDimensions = false, selected = false, onC
                     <div className="bg-tint rounded-[inherit] absolute inset-0 opacity-15" />
                 </div>
             )}
-            {(!useDimensions || height > 0) && (
+            {(!useDimensions || dimensionsLoaded) && (
                 <img
                     src={`${image.url}?scale-down-to=512`}
                     alt={image.altText}
