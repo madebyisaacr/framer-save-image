@@ -146,43 +146,11 @@ function CanvasView() {
     }, [images, dimensions])
 
     return (
-        <div className="flex-col w-full relative">
-            {images.length > 1 && <div className="absolute inset-x-3 top-0 h-px bg-divider z-10" />}
-            <main className="flex-col gap-3 w-full overflow-y-auto max-h-[500px] select-none">
-                <div className="flex-col w-full px-3">
-                    {images.length === 1 ? (
-                        <ImageItem image={images[0]} useDimensions={false} />
-                    ) : images.length > 0 ? (
-                        <div ref={scrollRef} className="relative flex-1 rounded pt-3">
-                            <div className="relative">
-                                <div className="flex-row gap-2">
-                                    {imageColumns.map((columnImages, i) => (
-                                        <div key={`column-${i}`} className="flex-col gap-2 flex-1">
-                                            {columnImages.map(image => (
-                                                <ImageItem
-                                                    key={image.id}
-                                                    image={image}
-                                                    height={
-                                                        dimensions[image.id]
-                                                            ? calculateImageHeight(image, dimensions)
-                                                            : 100
-                                                    }
-                                                    dimensionsLoaded={dimensions[image.id] ? true : false}
-                                                    useDimensions={true}
-                                                    selected={selectedImageId === image.id}
-                                                    onClick={() =>
-                                                        setSelectedImageId(
-                                                            selectedImageId === image.id ? null : image.id
-                                                        )
-                                                    }
-                                                />
-                                            ))}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
+        <main className="flex-col gap-3 w-full max-h-[500px] select-none overflow-hidden">
+            {images.length <= 1 ? (
+                <div className="flex-col w-full relative px-3 pb-3 gap-3 overflow-hidden">
+                    {images.length > 1 && <div className="absolute inset-x-3 top-0 h-px bg-divider z-10" />}
+                    {images.length === 0 ? (
                         <span className="w-full overflow-hidden bg-tertiary dark:bg-secondary rounded flex center relative text-secondary aspect-video flex-col center gap-2">
                             <div className="size-[22px] relative flex center">
                                 <div className="absolute inset-0 rounded-[4px] bg-[var(--framer-color-text)] opacity-15" />
@@ -204,32 +172,55 @@ function CanvasView() {
                             </div>
                             Select an image
                         </span>
+                    ) : (
+                        <div className="w-full bg-tertiary dark:bg-secondary rounded flex center relative overflow-hidden">
+                            <img
+                                src={`${images[0].url}?scale-down-to=512`}
+                                alt={images[0].altText}
+                                className="size-full object-contain relative rounded-[inherit] max-h-[400px]"
+                                draggable={false}
+                            />
+                            <div className="absolute inset-0 border border-image-border rounded-[inherit]" />
+                        </div>
                     )}
+                    <ImageButtons image={images[0]} />
                 </div>
-                {images.length > 1 && <div className="relative w-full mx-3 h-px bg-divider" />}
-                <div className="flex-col gap-3 px-3 pb-3 sticky bottom-0 bg-primary">
-                    <ImageButtons image={selectedImage} />
+            ) : (
+                <div className="flex-col w-full relative overflow-y-auto">
+                    {images.length > 1 && <div className="absolute inset-x-3 top-0 h-px bg-divider z-10" />}
+                    <div ref={scrollRef} className="p-3 flex-row gap-2">
+                        {imageColumns.map((columnImages, i) => (
+                            <div key={`column-${i}`} className="flex-col gap-2 flex-1">
+                                {columnImages.map(image => (
+                                    <ImageItem
+                                        key={image.id}
+                                        image={image}
+                                        height={dimensions[image.id] ? calculateImageHeight(image, dimensions) : 100}
+                                        dimensionsLoaded={dimensions[image.id] ? true : false}
+                                        selected={selectedImageId === image.id}
+                                        onClick={() =>
+                                            setSelectedImageId(selectedImageId === image.id ? null : image.id)
+                                        }
+                                    />
+                                ))}
+                            </div>
+                        ))}
+                    </div>
+                    <div className="flex-col gap-3 p-3 sticky bottom-0 bg-primary">
+                        <div className="absolute top-0 inset-x-3 h-px bg-divider" />
+                        <ImageButtons image={selectedImage} />
+                    </div>
                 </div>
-            </main>
-        </div>
+            )}
+        </main>
     )
 }
 
-function ImageItem({
-    image,
-    height,
-    dimensionsLoaded = false,
-    useDimensions = false,
-    selected = false,
-    onClick = null,
-}) {
+function ImageItem({ image, height, dimensionsLoaded = false, selected = false, onClick = null }) {
     return (
         <div
-            className={classNames(
-                "w-full bg-tertiary dark:bg-secondary rounded flex center relative",
-                onClick && "cursor-pointer"
-            )}
-            style={{ height: useDimensions ? (height ? height : 400) : undefined }}
+            className="w-full bg-tertiary dark:bg-secondary rounded flex center relative cursor-pointer"
+            style={{ height }}
             onClick={onClick}
         >
             {selected && (
@@ -237,12 +228,12 @@ function ImageItem({
                     <div className="bg-tint rounded-[inherit] absolute inset-0 opacity-15" />
                 </div>
             )}
-            {(!useDimensions || dimensionsLoaded) && (
+            {dimensionsLoaded && (
                 <img
                     src={`${image.url}?scale-down-to=512`}
                     alt={image.altText}
                     className="w-full h-full object-contain relative rounded-[inherit]"
-                    style={{ maxHeight: useDimensions ? (height ? height : 400) : undefined, minHeight: 10 }}
+                    style={{ maxHeight: height, minHeight: 10 }}
                     draggable={false}
                 />
             )}
