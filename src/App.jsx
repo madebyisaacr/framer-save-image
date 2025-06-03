@@ -589,7 +589,6 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
                 onClick={handleTitleClick}
             >
                 <div className="flex-row gap-2.5 items-center overflow-hidden h-10 w-full">
-                    <Icon type={row.type} active={includesActiveImage} />
                     <span className={classNames("truncate", includesActiveImage && "text-primary")} title={row.title}>
                         {row.title}
                     </span>
@@ -789,35 +788,6 @@ function useImage() {
     }, [])
 
     return image
-}
-
-function Icon({ type = "image", active = false }) {
-    return (
-        <div className={classNames("group-hover:text-primary shrink-0", active ? "text-primary" : "text-tertiary")}>
-            {type === "page" ? (
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12">
-                    <path
-                        d="M 1 2.5 C 1 1.119 2.119 0 3.5 0 L 5 0 C 5.552 0 6 0.448 6 1 L 6 3 C 6 4.105 6.895 5 8 5 L 10 5 C 10.552 5 11 5.448 11 6 L 11 9.5 C 11 10.881 9.881 12 8.5 12 L 3.5 12 C 2.119 12 1 10.881 1 9.5 Z M 7.427 0.427 C 7.269 0.269 7 0.381 7 0.604 L 7 3 C 7 3.552 7.448 4 8 4 L 10.396 4 C 10.619 4 10.731 3.731 10.573 3.573 Z"
-                        fill="currentColor"
-                    ></path>
-                </svg>
-            ) : type === "component" ? (
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12">
-                    <path
-                        d="M 11.439 4.939 C 12.025 5.525 12.025 6.475 11.439 7.061 L 9.957 8.543 C 9.762 8.738 9.445 8.738 9.25 8.543 L 7.061 6.354 C 6.865 6.158 6.865 5.842 7.061 5.646 L 9.25 3.457 C 9.445 3.262 9.762 3.262 9.957 3.457 Z M 3.457 2.75 C 3.262 2.555 3.262 2.238 3.457 2.043 L 4.939 0.561 C 5.525 -0.025 6.475 -0.025 7.061 0.561 L 8.543 2.043 C 8.738 2.238 8.738 2.555 8.543 2.75 L 6.354 4.939 C 6.158 5.135 5.842 5.135 5.646 4.939 Z M 7.061 11.439 C 6.475 12.025 5.525 12.025 4.939 11.439 L 3.457 9.957 C 3.262 9.762 3.262 9.445 3.457 9.25 L 5.646 7.061 C 5.842 6.865 6.158 6.865 6.354 7.061 L 8.543 9.25 C 8.738 9.445 8.738 9.762 8.543 9.957 Z M 0.561 7.061 C -0.025 6.475 -0.025 5.525 0.561 4.939 L 2.043 3.457 C 2.238 3.262 2.555 3.262 2.75 3.457 L 4.939 5.646 C 5.135 5.842 5.135 6.158 4.939 6.354 L 2.75 8.543 C 2.555 8.738 2.238 8.738 2.043 8.543 Z"
-                        fill="currentColor"
-                    ></path>
-                </svg>
-            ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12">
-                    <path
-                        d="M 1 3 C 1 1.895 1.895 1 3 1 L 9 1 C 10.105 1 11 1.895 11 3 L 11 9 C 11 10.105 10.105 11 9 11 L 3 11 C 1.895 11 1 10.105 1 9 Z"
-                        fill="currentColor"
-                    ></path>
-                </svg>
-            )}
-        </div>
-    )
 }
 
 function Spinner() {
