@@ -319,8 +319,6 @@ function CollectionView() {
             }
         }
 
-        console.log(rows, columns)
-
         return [rows, columns, titleColumnName]
     }, [collection, collectionFields, collectionItems, isLoading])
 
@@ -392,7 +390,7 @@ function CollectionView() {
                             ></path>
                         </svg>
                     </div>
-                    <span className="text-primary font-semibold">No image fields found</span>
+                    <span className="text-primary font-semibold">No images found</span>
                     <span className="text-tertiary">This collection doesn't have any image or gallery fields.</span>
                     {collectionFields.some(field => field.type === "unsupported") && (
                         <p className="text-tertiary mt-2">
