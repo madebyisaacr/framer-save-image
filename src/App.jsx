@@ -263,7 +263,23 @@ function CollectionView() {
 
             for (const field of collectionFields) {
                 if (field.type === "image") {
-                    columns.push(field.name)
+                    columns.push({ name: field.name, id: field.id })
+                } else if (field.type === "array") {
+                    const imageFields = []
+
+                    for (const arrayField of field.fields) {
+                        if (arrayField.type === "image") {
+                            imageFields.push(arrayField)
+                        }
+                    }
+
+                    if (imageFields.length === 1) {
+                        columns.push({ name: field.name, id: imageFields[0].id })
+                    } else if (imageFields.length > 1) {
+                        for (const imageField of imageFields) {
+                            columns.push({ name: `${field.name} -> ${imageField.name}`, id: imageField.id })
+                        }
+                    }
                 }
             }
 
@@ -271,8 +287,26 @@ function CollectionView() {
                 const columnValues = {}
 
                 for (const field of collectionFields) {
-                    if (columns.indexOf(field.name) !== -1) {
-                        columnValues[field.name] = [item.fieldData[field.id]?.value]
+                    if (field.type === "array") {
+                        const fieldData = item.fieldData[field.id]?.value
+
+                        for (const arrayField of field.fields) {
+                            const column = columns.find(c => c.id === arrayField.id)
+                            if (column) {
+                                const values = []
+
+                                for (const arrayItem of fieldData) {
+                                    values.push(arrayItem.fieldData?.[arrayField.id]?.value)
+                                }
+
+                                columnValues[arrayField.id] = values
+                            }
+                        }
+                    } else {
+                        const column = columns.find(c => c.id === field.id)
+                        if (column) {
+                            columnValues[column.id] = [item.fieldData[field.id]?.value]
+                        }
                     }
                 }
 
@@ -284,6 +318,8 @@ function CollectionView() {
                 })
             }
         }
+
+        console.log(rows, columns)
 
         return [rows, columns, titleColumnName]
     }, [collection, collectionFields, collectionItems, isLoading])
@@ -343,7 +379,7 @@ function CollectionView() {
                     isCollectionMode
                 />
             ) : (
-                <div className="flex-col pt-6 pb-10 center gap-1 px-3 w-full flex-1 text-center text-balance">
+                <div className="flex-col pt-6 pb-10 center gap-1.5 px-3 w-full flex-1 text-center text-balance">
                     <div className="size-[22px] relative flex center bg-tint rounded-[4px] mb-1">
                         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" className="text-reversed">
                             <path
@@ -357,7 +393,7 @@ function CollectionView() {
                         </svg>
                     </div>
                     <span className="text-primary font-semibold">No image fields found</span>
-                    <span className="text-tertiary">This collection doesn't have any image fields.</span>
+                    <span className="text-tertiary">This collection doesn't have any image or gallery fields.</span>
                     {collectionFields.some(field => field.type === "unsupported") && (
                         <p className="text-tertiary mt-2">
                             Due to a technical limitation, gallery fields are not currently supported.{" "}
@@ -387,8 +423,8 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
         const row = rows.find(r => r.id === activeSelection.nodeId)
         if (!row) return null
 
-        for (const columnName of columns) {
-            const images = row.columns?.[columnName]
+        for (const column of columns) {
+            const images = row.columns?.[column.id]
             if (Array.isArray(images)) {
                 const image = images.find(img => img.id === activeSelection.imageId)
                 if (image) return image
@@ -458,8 +494,8 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
                         <tr className="relative">
                             <TableHeading className="min-w-[100px] pl-3">{titleColumnName}</TableHeading>
                             {columns.map(column => (
-                                <TableHeading key={column} className="pr-3">
-                                    {column}
+                                <TableHeading key={column.id} className="pr-3">
+                                    {column.name}
                                 </TableHeading>
                             ))}
                             <div className="absolute inset-x-3 bottom-0 h-px bg-divider" />
@@ -496,15 +532,15 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
     const imageElements = useRef([])
 
     const includesActiveImage = useMemo(() => {
-        return columns.some(columnName => {
-            return Array.isArray(row.columns?.[columnName]) && row.columns[columnName].includes(activeImage)
+        return columns.some(column => {
+            return Array.isArray(row.columns?.[column.id]) && row.columns[column.id].includes(activeImage)
         })
     }, [row, columns, activeImage])
 
     const handleTitleClick = () => {
         // Find the first column that has images
-        for (const columnName of columns) {
-            const images = row.columns?.[columnName]
+        for (const column of columns) {
+            const images = row.columns?.[column.id]
             if (Array.isArray(images) && images.length > 0) {
                 // Get the first image and its corresponding element
                 const firstImage = images[0]
@@ -526,7 +562,7 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
         >
             <td
                 className={classNames(
-                    "text-nowrap px-3 cursor-pointer flex flex-col items-start",
+                    "text-nowrap px-3 cursor-pointer flex-col items-start",
                     isCollectionMode ? "min-w-[250px] max-w-[300px]" : "max-w-[200px]"
                 )}
                 onClick={handleTitleClick}
@@ -538,26 +574,22 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
                 </div>
                 {!isLastRow && <div className="absolute inset-x-3 bottom-0 h-px bg-divider" />}
             </td>
-            {columns.map((columnName, columnIndex) => (
-                <td key={`${row.id}-${columnName}-${columnIndex}`}>
-                    <div className="flex-row gap-2 pr-3 flex-wrap max-w-[185px] py-[14px]">
-                        {Array.isArray(row.columns?.[columnName])
-                            ? row.columns[columnName].map((image, index) => (
+            {columns.map((column, columnIndex) => (
+                <td key={`${row.id}-${column.id}-${columnIndex}`} className="align-top">
+                    <div className="flex-row gap-1 pr-3 flex-wrap max-w-[185px] py-[10px]">
+                        {Array.isArray(row.columns?.[column.id])
+                            ? row.columns[column.id].map((image, index) => (
                                   <div
                                       key={`${row.id}-${image ? image.id : "empty"}-${index}`}
                                       className={classNames("flex-col center shrink-0 w-10", image && "cursor-pointer")}
                                       ref={el => (imageElements.current[index] = el)}
                                       onClick={() => changeActiveImage(image, imageElements.current[index], row.id)}
                                   >
-                                      <div
-                                          className={classNames(
-                                              "w-full h-[22px] relative rounded-[4px] bg-secondary transition-transform"
-                                          )}
-                                      >
+                                      <div className="w-full h-[30px] relative rounded-sm bg-secondary transition-transform">
                                           {image && (
                                               <>
                                                   {activeImage === image && (
-                                                      <div className="absolute -inset-[4px] border-2 border-tint rounded">
+                                                      <div className="absolute -inset-[3px] border-[1.5px] border-tint rounded">
                                                           <div className="bg-tint rounded-[inherit] absolute inset-0 opacity-15" />
                                                       </div>
                                                   )}
