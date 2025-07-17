@@ -424,7 +424,7 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
         for (const column of columns) {
             const images = row.columns?.[column.id]
             if (Array.isArray(images)) {
-                const image = images.find(img => img.id === activeSelection.imageId)
+                const image = images.find(img => img && img.id === activeSelection.imageId)
                 if (image) return image
             }
         }
