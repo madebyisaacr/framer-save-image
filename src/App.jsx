@@ -322,23 +322,33 @@ function CollectionView() {
         return [rows, columns, titleColumnName]
     }, [collection, collectionFields, collectionItems, isLoading])
 
+    // Check if any rows have images
+    const hasAnyImages = useMemo(() => {
+        return rows.some(row => {
+            return columns.some(column => {
+                const images = row.columns?.[column.id]
+                return Array.isArray(images) && images.some(img => img !== null && img !== undefined)
+            })
+        })
+    }, [rows, columns])
+
     useEffect(() => {
-        // Handle UI sizing when there are no image fields
-        if (!isLoading && columns.length === 0) {
+        // Handle UI sizing when there are no image fields or no images in items
+        if (!isLoading && (columns.length === 0 || !hasAnyImages)) {
             framer.showUI({
                 position: "top right",
                 width: 300,
                 height: 300,
             })
         }
-    }, [isLoading, columns.length])
+    }, [isLoading, columns.length, hasAnyImages])
 
     return (
         <div
             ref={ref}
             className={classNames(
                 "flex-col max-h-[500px] select-none overflow-hidden",
-                isLoading || columns.length === 0 ? "size-full" : "w-full"
+                isLoading || columns.length === 0 || !hasAnyImages ? "size-full" : "w-full"
             )}
         >
             {collections.length > 1 && (
@@ -368,7 +378,7 @@ function CollectionView() {
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                     <Spinner />
                 </div>
-            ) : columns.length > 0 ? (
+            ) : columns.length > 0 && hasAnyImages ? (
                 <Table
                     containerRef={ref}
                     rows={rows}
@@ -391,7 +401,11 @@ function CollectionView() {
                         </svg>
                     </div>
                     <span className="text-primary font-semibold">No images found</span>
-                    <span className="text-tertiary">This collection doesn't have any image or gallery fields.</span>
+                    <span className="text-tertiary">
+                        {columns.length === 0
+                            ? "This collection doesn't have any image or gallery fields."
+                            : "No items in this collection have any images."}
+                    </span>
                 </div>
             )}
         </div>
@@ -478,7 +492,6 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
         if (!elementRef.current) return
 
         const updateSize = () => {
-            console.log(pluginWidth, elementRef.current.offsetHeight)
             if (!elementRef.current) return
 
             framer.showUI({
@@ -531,17 +544,28 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
                             </tr>
                         </thead>
                         <tbody>
-                            {rows.map((row, index) => (
-                                <TableRow
-                                    key={row.id}
-                                    row={row}
-                                    columns={columns}
-                                    isLastRow={index === rows.length - 1}
-                                    isCollectionMode={isCollectionMode}
-                                    activeImage={activeImage}
-                                    changeActiveImage={changeActiveImage}
-                                />
-                            ))}
+                            {rows
+                                .filter(row => {
+                                    // Hide rows that don't have any images
+                                    return columns.some(column => {
+                                        const images = row.columns?.[column.id]
+                                        return (
+                                            Array.isArray(images) &&
+                                            images.some(img => img !== null && img !== undefined)
+                                        )
+                                    })
+                                })
+                                .map((row, index, filteredArray) => (
+                                    <TableRow
+                                        key={row.id}
+                                        row={row}
+                                        columns={columns}
+                                        isLastRow={index === filteredArray.length - 1}
+                                        isCollectionMode={isCollectionMode}
+                                        activeImage={activeImage}
+                                        changeActiveImage={changeActiveImage}
+                                    />
+                                ))}
                         </tbody>
                     </table>
                 </div>
