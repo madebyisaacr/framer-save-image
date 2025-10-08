@@ -337,8 +337,8 @@ function CollectionView() {
         <div
             ref={ref}
             className={classNames(
-                "flex-col max-h-[500px] select-none",
-                isLoading || columns.length === 0 ? "w-full size-full" : "w-max"
+                "flex-col max-h-[500px] select-none overflow-hidden",
+                isLoading || columns.length === 0 ? "size-full" : "w-full"
             )}
         >
             {collections.length > 1 && (
@@ -392,17 +392,6 @@ function CollectionView() {
                     </div>
                     <span className="text-primary font-semibold">No images found</span>
                     <span className="text-tertiary">This collection doesn't have any image or gallery fields.</span>
-                    {collectionFields.some(field => field.type === "unsupported") && (
-                        <p className="text-tertiary mt-2">
-                            Due to a technical limitation, gallery fields are not currently supported.{" "}
-                            <a
-                                href="https://www.framer.community/c/plugin-api-requests/add-gallery-fields-support-to-cms-plugins"
-                                target="_blank"
-                            >
-                                Learn more...
-                            </a>
-                        </p>
-                    )}
                 </div>
             )}
         </div>
@@ -444,16 +433,57 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
         }
     }
 
+    // Calculate deterministic width based on column content
+    const pluginWidth = useMemo(() => {
+        const NAME_COLUMN_WIDTH = 250
+        const MAX_PLUGIN_WIDTH = 600
+        const IMAGE_WIDTH = 50
+        const IMAGE_GAP = 5
+        const COLUMN_PADDING = 15
+
+        // Calculate width for each column based on max images in any cell
+        let totalColumnWidth = NAME_COLUMN_WIDTH
+
+        for (const column of columns) {
+            // Find the maximum number of images in any cell in this column
+            let maxImagesInColumn = 0
+            for (const row of rows) {
+                const images = row.columns?.[column.id]
+                if (Array.isArray(images)) {
+                    const imageCount = images.filter(img => img !== null && img !== undefined).length
+                    maxImagesInColumn = Math.max(maxImagesInColumn, imageCount)
+                }
+            }
+
+            // Cap at 3 images for width calculation
+            const effectiveImageCount = Math.min(maxImagesInColumn, 3)
+
+            // Calculate column width: N images * 30px + (N-1) gaps * 5px + 15px padding
+            const columnWidth =
+                effectiveImageCount > 0
+                    ? Math.max(
+                          100,
+                          effectiveImageCount * IMAGE_WIDTH + (effectiveImageCount - 1) * IMAGE_GAP + COLUMN_PADDING
+                      )
+                    : 100 // Default to 100 if no images
+
+            totalColumnWidth += columnWidth
+        }
+
+        return Math.min(totalColumnWidth, MAX_PLUGIN_WIDTH)
+    }, [rows, columns])
+
     useEffect(() => {
         const elementRef = containerRef ?? ref
         if (!elementRef.current) return
 
         const updateSize = () => {
+            console.log(pluginWidth, elementRef.current.offsetHeight)
             if (!elementRef.current) return
 
             framer.showUI({
                 position: "top right",
-                width: Math.max(Math.min(elementRef.current.offsetWidth, 600), 280),
+                width: pluginWidth,
                 height: Math.max(Math.min(elementRef.current.offsetHeight, 500), 158),
             })
         }
@@ -461,14 +491,14 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
         // Initial size update
         updateSize()
 
-        // Set up resize observer
+        // Set up resize observer for height only
         const resizeObserver = new ResizeObserver(updateSize)
         resizeObserver.observe(elementRef.current)
 
         return () => {
             resizeObserver.disconnect()
         }
-    }, [rows, activeImage, activeImageElement])
+    }, [rows, activeImage, activeImageElement, pluginWidth])
 
     // Add keyboard event listener for Escape key
     useEffect(() => {
@@ -484,35 +514,37 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
     }, [activeImage])
 
     return (
-        <div ref={ref} className="overflow-auto flex-col select-none relative w-max">
-            <div className="flex-col w-max min-w-[260px] relative">
+        <div ref={ref} className="overflow-y-auto overflow-x-hidden flex-col select-none relative w-full">
+            <div className="flex-col w-full relative">
                 <div className="sticky top-0 h-px bg-divider mx-3" />
-                <table>
-                    <thead className="h-10 text-left">
-                        <tr className="relative">
-                            <TableHeading className="min-w-[100px] pl-3">{titleColumnName}</TableHeading>
-                            {columns.map(column => (
-                                <TableHeading key={column.id} className="pr-3">
-                                    {column.name}
-                                </TableHeading>
+                <div className="w-full overflow-x-auto">
+                    <table>
+                        <thead className="h-10 text-left">
+                            <tr className="relative">
+                                <TableHeading className="min-w-[100px] pl-3">{titleColumnName}</TableHeading>
+                                {columns.map(column => (
+                                    <TableHeading key={column.id} className="pr-3">
+                                        {column.name}
+                                    </TableHeading>
+                                ))}
+                                <div className="absolute inset-x-3 bottom-0 h-px bg-divider" />
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rows.map((row, index) => (
+                                <TableRow
+                                    key={row.id}
+                                    row={row}
+                                    columns={columns}
+                                    isLastRow={index === rows.length - 1}
+                                    isCollectionMode={isCollectionMode}
+                                    activeImage={activeImage}
+                                    changeActiveImage={changeActiveImage}
+                                />
                             ))}
-                            <div className="absolute inset-x-3 bottom-0 h-px bg-divider" />
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {rows.map((row, index) => (
-                            <TableRow
-                                key={row.id}
-                                row={row}
-                                columns={columns}
-                                isLastRow={index === rows.length - 1}
-                                isCollectionMode={isCollectionMode}
-                                activeImage={activeImage}
-                                changeActiveImage={changeActiveImage}
-                            />
-                        ))}
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
                 <div className="flex-col gap-3 p-3 sticky bottom-0 bg-primary">
                     <div className="absolute inset-x-3 top-0 h-px bg-divider" />
                     <ImageButtons image={activeImage} />
@@ -523,7 +555,16 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
 }
 
 function TableHeading({ children, className }) {
-    return <th className={classNames("text-tertiary font-medium", className)}>{children}</th>
+    return (
+        <th
+            className={classNames(
+                "text-tertiary font-medium max-w-[100px] overflow-ellipsis overflow-hidden text-nowrap",
+                className
+            )}
+        >
+            {children}
+        </th>
+    )
 }
 
 function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, activeImage, changeActiveImage }) {
@@ -558,13 +599,7 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
                 includesActiveImage && "bg-[#FCFCFC] dark:bg-[#161616]"
             )}
         >
-            <td
-                className={classNames(
-                    "text-nowrap px-3 cursor-pointer flex-col items-start",
-                    isCollectionMode ? "min-w-[250px] max-w-[300px]" : "max-w-[200px]"
-                )}
-                onClick={handleTitleClick}
-            >
+            <td className="text-nowrap px-3 cursor-pointer flex-col items-start w-[250px]" onClick={handleTitleClick}>
                 <div className="flex-row gap-2.5 items-center overflow-hidden h-10 w-full">
                     <span className={classNames("truncate", includesActiveImage && "text-primary")} title={row.title}>
                         {row.title}
@@ -574,7 +609,7 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
             </td>
             {columns.map((column, columnIndex) => (
                 <td key={`${row.id}-${column.id}-${columnIndex}`} className="align-top">
-                    <div className="flex-row gap-1 pr-3 flex-wrap max-w-[185px] py-[10px]">
+                    <div className="flex-row gap-1 pr-3 flex-wrap max-w-[175px] py-[10px]">
                         {Array.isArray(row.columns?.[column.id])
                             ? row.columns[column.id].map((image, index) => (
                                   <div
