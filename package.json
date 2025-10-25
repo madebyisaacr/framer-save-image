@@ -13,7 +13,7 @@
     "dependencies": {
         "autoprefixer": "^10.4.21",
         "classnames": "^2.5.1",
-        "framer-plugin": "^3.4.0",
+        "framer-plugin": "3.7.0",
         "postcss": "^8.5.4",
         "react": "^18",
         "react-dom": "^18",
@@ -25,7 +25,6 @@
         "@types/react": "^18",
         "@types/react-dom": "^18",
         "@vitejs/plugin-react": "^4.3.1",
-        "@vitejs/plugin-react-swc": "^3",
         "eslint": "^9.9.0",
         "eslint-plugin-react-hooks": "^5.1.0",
         "eslint-plugin-react-refresh": "^0.4.9",
@@ -33,6 +32,6 @@
         "typescript": "^5.3",
         "typescript-eslint": "^8.0.1",
         "vite": "^6",
-        "vite-plugin-framer": "^1"
+        "vite-plugin-framer": "^1.0.7"
     }
 }
