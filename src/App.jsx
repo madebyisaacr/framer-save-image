@@ -1,5 +1,5 @@
 import { framer, isFrameNode, isComponentInstanceNode, isImageAsset } from "framer-plugin"
-import { useState, useEffect, useMemo, useRef } from "react"
+import { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react"
 import "./App.css"
 import { copyToClipboard, downloadFile } from "./utils"
 import { useDynamicPluginHeight } from "./useDynamicPluginHeight"
@@ -25,23 +25,45 @@ function CanvasView() {
         maxHeight: 500,
     })
 
-    const images = useMemo(() => {
+    const { images, imageLayerIds } = useMemo(() => {
         if (framer.mode === "editImage") {
-            return image ? [image] : []
+            return {
+                images: image ? [image] : [],
+                imageLayerIds: {},
+            }
         } else {
             const allImages = []
+            const layerIdsMap = new Map()
 
             for (const node of selection) {
                 if (isFrameNode(node)) {
                     if (isImageAsset(node.backgroundImage)) {
                         allImages.push(node.backgroundImage)
+                        const imageId = node.backgroundImage.id
+                        if (imageId) {
+                            if (!layerIdsMap.has(imageId)) {
+                                layerIdsMap.set(imageId, new Set())
+                            }
+                            layerIdsMap.get(imageId).add(node.id)
+                        }
                     }
                 } else if (isComponentInstanceNode(node)) {
-                    allImages.push(...getImageAssets(node.controls))
+                    const imageAssets = getImageAssets(node.controls)
+                    for (const img of imageAssets) {
+                        allImages.push(img)
+                        const imageId = img.id
+                        if (imageId) {
+                            if (!layerIdsMap.has(imageId)) {
+                                layerIdsMap.set(imageId, new Set())
+                            }
+                            layerIdsMap.get(imageId).add(node.id)
+                        }
+                    }
                 }
             }
 
             const uniqueImages = []
+            const imageLayerIds = {}
 
             if (allImages.length > 0) {
                 // Remove duplicate images by id (or by reference if no id)
@@ -51,12 +73,20 @@ function CanvasView() {
                     if (!seen.has(key)) {
                         seen.add(key)
                         uniqueImages.push(img)
+
+                        // Convert Set to Array for the final object
+                        if (img && img.id && layerIdsMap.has(img.id)) {
+                            imageLayerIds[img.id] = Array.from(layerIdsMap.get(img.id))
+                        }
                     }
                 }
             }
 
             // Limit to 100 images
-            return uniqueImages.slice(0, MAX_IMAGES_CANVAS)
+            return {
+                images: uniqueImages.slice(0, MAX_IMAGES_CANVAS),
+                imageLayerIds,
+            }
         }
     }, [image, selection])
 
@@ -147,6 +177,7 @@ function CanvasView() {
                                     <ImageItem
                                         key={image.id}
                                         image={image}
+                                        layerIds={imageLayerIds[image.id] || []}
                                         height={dimensions[image.id] ? calculateImageHeight(image, dimensions) : 100}
                                         dimensionsLoaded={dimensions[image.id] ? true : false}
                                         selected={selectedImageId === image.id}
@@ -168,12 +199,36 @@ function CanvasView() {
     )
 }
 
-function ImageItem({ image, height, dimensionsLoaded = false, selected = false, onClick = null }) {
+function ImageItem({ image, layerIds = [], height, dimensionsLoaded = false, selected = false, onClick = null }) {
+    const onContextMenu = event => {
+        event.preventDefault()
+
+        if (layerIds.length === 0) return
+
+        void framer.showContextMenu(
+            [
+                {
+                    label: layerIds.length === 1 ? "Select 1 Layer" : `Select ${layerIds.length} Layers`,
+                    onAction: () => {
+                        framer.setSelection(layerIds)
+                    },
+                },
+            ],
+            {
+                location: {
+                    x: event.clientX ?? 0,
+                    y: event.clientY ?? 0,
+                },
+            }
+        )
+    }
+
     return (
         <div
             className="w-full bg-tertiary dark:bg-secondary rounded flex center relative cursor-pointer"
             style={{ height }}
             onClick={onClick}
+            onContextMenu={onContextMenu}
         >
             {selected && (
                 <div className="absolute -inset-[4px] border-2 border-tint rounded-[12px]">
@@ -332,7 +387,7 @@ function CollectionView() {
         })
     }, [rows, columns])
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         // Handle UI sizing when there are no image fields or no images in items
         if (!isLoading && (columns.length === 0 || !hasAnyImages)) {
             framer.showUI({
@@ -499,7 +554,7 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
         return Math.min(totalColumnWidth, MAX_PLUGIN_WIDTH)
     }, [rows, columns])
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         const elementRef = containerRef ?? ref
         if (!elementRef.current) return
 

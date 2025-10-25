@@ -1,12 +1,12 @@
 import { framer, UIOptions } from "framer-plugin"
-import { useEffect } from "react"
+import { useLayoutEffect } from "react"
 
 // Automatically resize the plugin to match the height of the content.
 // Use this in place of framer.showUI() inside a React component.
 export function useDynamicPluginHeight(
     options: Omit<Partial<UIOptions>, "resizable"> & { resizable?: false | "width" } = {}
 ) {
-    useEffect(() => {
+    useLayoutEffect(() => {
         const root = document.getElementById("root")
         if (!root) return
 
