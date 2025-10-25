@@ -571,7 +571,7 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
                 </div>
                 <div className="flex-col gap-3 p-3 sticky bottom-0 bg-primary">
                     <div className="absolute inset-x-3 top-0 h-px bg-divider" />
-                    <ImageButtons image={activeImage} />
+                    <ImageButtons image={activeImage} horizontal />
                 </div>
             </div>
         </div>
@@ -633,7 +633,7 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
             </td>
             {columns.map((column, columnIndex) => (
                 <td key={`${row.id}-${column.id}-${columnIndex}`} className="align-top">
-                    <div className="flex-row gap-1 pr-3 flex-wrap max-w-[175px] py-[10px]">
+                    <div className="flex-row gap-1 pr-3 flex-wrap min-w-[100px] py-[10px]">
                         {Array.isArray(row.columns?.[column.id])
                             ? row.columns[column.id].map((image, index) => (
                                   <div
@@ -670,7 +670,7 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
     )
 }
 
-function ImageButtons({ image, onButtonClick = null }) {
+function ImageButtons({ image, horizontal = false, onButtonClick = null }) {
     const [isDownloading, setIsDownloading] = useState(false)
     const [isCopying, setIsCopying] = useState(false)
     const [isCopyingUrl, setIsCopyingUrl] = useState(false)
@@ -782,8 +782,14 @@ function ImageButtons({ image, onButtonClick = null }) {
     }
 
     return (
-        <div className={classNames("flex-col gap-2 w-full", !hasImage && "opacity-50 pointer-events-none")}>
-            <div className="flex-row gap-2 flex-1">
+        <div
+            className={classNames(
+                "gap-2 w-full",
+                horizontal ? "flex-row" : "flex-col",
+                !hasImage && "opacity-50 pointer-events-none"
+            )}
+        >
+            <div className={classNames("gap-2 flex-1", horizontal ? "contents" : "flex-row")}>
                 <button onClick={onCopyImageClick} className="flex-1">
                     {isCopying ? <Spinner /> : "Copy Image"}
                 </button>
@@ -791,7 +797,7 @@ function ImageButtons({ image, onButtonClick = null }) {
                     {isCopyingUrl ? <Spinner /> : "Copy URL"}
                 </button>
             </div>
-            <button onClick={onDownloadImageClick} className="framer-button-primary">
+            <button onClick={onDownloadImageClick} className="framer-button-primary flex-1 min-h-[30px]">
                 {isDownloading ? <Spinner /> : "Download"}
             </button>
         </div>
