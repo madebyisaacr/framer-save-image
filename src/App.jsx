@@ -420,29 +420,41 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
 
     // Find the active image from the rows based on the stored IDs
     const activeImage = useMemo(() => {
-        if (!activeSelection.nodeId || !activeSelection.imageId) return null
+        if (
+            !activeSelection.nodeId ||
+            !activeSelection.imageId ||
+            activeSelection.columnIndex === null ||
+            activeSelection.columnIndex === undefined
+        )
+            return null
+
         const row = rows.find(r => r.id === activeSelection.nodeId)
         if (!row) return null
 
-        for (const column of columns) {
-            const images = row.columns?.[column.id]
-            if (Array.isArray(images)) {
-                const image = images.find(img => img && img.id === activeSelection.imageId)
-                if (image) return image
-            }
+        const column = columns[activeSelection.columnIndex]
+        if (!column) return null
+
+        const images = row.columns?.[column.id]
+        if (Array.isArray(images)) {
+            const image = images.find(img => img && img.id === activeSelection.imageId)
+            if (image) return image
         }
         return null
     }, [rows, columns, activeSelection])
 
-    function changeActiveImage(image, element, nodeId) {
+    function changeActiveImage(image, element, nodeId, columnIndex = null) {
         if (!image) return
 
-        const isSelecting = image.id !== activeSelection.imageId || nodeId !== activeSelection.nodeId
+        const isSelecting =
+            image.id !== activeSelection.imageId ||
+            nodeId !== activeSelection.nodeId ||
+            columnIndex !== activeSelection.columnIndex
+
         if (isSelecting) {
-            setActiveSelection({ nodeId, imageId: image.id })
+            setActiveSelection({ nodeId, imageId: image.id, columnIndex })
             setActiveImageElement(element)
         } else {
-            setActiveSelection({ nodeId: null, imageId: null })
+            setActiveSelection({ nodeId: null, imageId: null, columnIndex: null })
             setActiveImageElement(null)
         }
     }
@@ -563,6 +575,7 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
                                         isLastRow={index === filteredArray.length - 1}
                                         isCollectionMode={isCollectionMode}
                                         activeImage={activeImage}
+                                        activeColumnIndex={activeSelection.columnIndex}
                                         changeActiveImage={changeActiveImage}
                                     />
                                 ))}
@@ -591,25 +604,31 @@ function TableHeading({ children, className }) {
     )
 }
 
-function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, activeImage, changeActiveImage }) {
+function TableRow({ row, columns, isLastRow = false, activeImage, activeColumnIndex, changeActiveImage }) {
     const imageElements = useRef([])
 
     const includesActiveImage = useMemo(() => {
-        return columns.some(column => {
-            return Array.isArray(row.columns?.[column.id]) && row.columns[column.id].includes(activeImage)
-        })
-    }, [row, columns, activeImage])
+        if (
+            typeof activeColumnIndex === "number" &&
+            columns[activeColumnIndex] &&
+            Array.isArray(row.columns?.[columns[activeColumnIndex].id])
+        ) {
+            return row.columns[columns[activeColumnIndex].id].includes(activeImage)
+        }
+        return false
+    }, [row, columns, activeImage, activeColumnIndex])
 
     const handleTitleClick = () => {
         // Find the first column that has images
-        for (const column of columns) {
+        for (let i = 0; i < columns.length; i++) {
+            const column = columns[i]
             const images = row.columns?.[column.id]
             if (Array.isArray(images) && images.length > 0) {
                 // Get the first image and its corresponding element
                 const firstImage = images[0]
                 const elementIndex = imageElements.current.findIndex(el => el !== null)
                 if (elementIndex !== -1) {
-                    changeActiveImage(firstImage, imageElements.current[elementIndex], row.id)
+                    changeActiveImage(firstImage, imageElements.current[elementIndex], row.id, i)
                 }
                 break
             }
@@ -640,12 +659,14 @@ function TableRow({ row, columns, isLastRow = false, isCollectionMode = false, a
                                       key={`${row.id}-${image ? image.id : "empty"}-${index}`}
                                       className={classNames("flex-col center shrink-0 w-10", image && "cursor-pointer")}
                                       ref={el => (imageElements.current[index] = el)}
-                                      onClick={() => changeActiveImage(image, imageElements.current[index], row.id)}
+                                      onClick={() =>
+                                          changeActiveImage(image, imageElements.current[index], row.id, columnIndex)
+                                      }
                                   >
                                       <div className="w-full h-[30px] relative rounded-sm bg-secondary transition-transform">
                                           {image && (
                                               <>
-                                                  {activeImage === image && (
+                                                  {activeImage === image && activeColumnIndex === columnIndex && (
                                                       <div className="absolute -inset-[3px] border-[1.5px] border-tint rounded">
                                                           <div className="bg-tint rounded-[inherit] absolute inset-0 opacity-15" />
                                                       </div>
