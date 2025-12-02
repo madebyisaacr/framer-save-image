@@ -634,6 +634,7 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
                                     <TableRow
                                         key={row.id}
                                         row={row}
+                                        itemId={row.id}
                                         columns={columns}
                                         isLastRow={index === filteredArray.length - 1}
                                         isCollectionMode={isCollectionMode}
@@ -667,7 +668,7 @@ function TableHeading({ children, className }) {
     )
 }
 
-function TableRow({ row, columns, isLastRow = false, activeImage, activeColumnIndex, changeActiveImage }) {
+function TableRow({ row, itemId, columns, isLastRow = false, activeImage, activeColumnIndex, changeActiveImage }) {
     const imageElements = useRef([])
 
     const includesActiveImage = useMemo(() => {
@@ -698,12 +699,39 @@ function TableRow({ row, columns, isLastRow = false, activeImage, activeColumnIn
         }
     }
 
+    const onContextMenu = (event, columnId = null) => {
+        event.preventDefault()
+        event.stopPropagation()
+
+        void framer.showContextMenu(
+            [
+                {
+                    label: columnId ? "View Image" : "View Item",
+                    onAction: async () => {
+                        if (columnId) {
+                            void framer.navigateTo(itemId, { select: true, scrollTo: { collectionFieldId: columnId } })
+                        } else {
+                            void framer.navigateTo(itemId, { select: true })
+                        }
+                    },
+                },
+            ],
+            {
+                location: {
+                    x: event.clientX ?? 0,
+                    y: event.clientY ?? 0,
+                },
+            }
+        )
+    }
+
     return (
         <tr
             className={classNames(
                 "text-secondary group hover:text-primary font-medium px-3 relative",
                 includesActiveImage && "bg-[#FCFCFC] dark:bg-[#161616]"
             )}
+            onContextMenu={event => onContextMenu(event)}
         >
             <td className="text-nowrap px-3 cursor-pointer flex-col items-start w-[250px]" onClick={handleTitleClick}>
                 <div className="flex-row gap-2.5 items-center overflow-hidden h-10 w-full">
@@ -715,7 +743,10 @@ function TableRow({ row, columns, isLastRow = false, activeImage, activeColumnIn
             </td>
             {columns.map((column, columnIndex) => (
                 <td key={`${row.id}-${column.id}-${columnIndex}`} className="align-top">
-                    <div className="flex-row gap-1 pr-3 flex-wrap min-w-[100px] py-[10px]">
+                    <div
+                        className="flex-row gap-1 pr-3 flex-wrap min-w-[100px] py-[10px]"
+                        onContextMenu={event => onContextMenu(event, column.id)}
+                    >
                         {Array.isArray(row.columns?.[column.id])
                             ? row.columns[column.id].map((image, index) => (
                                   <div
