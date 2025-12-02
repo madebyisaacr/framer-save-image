@@ -700,6 +700,8 @@ function TableRow({ row, itemId, columns, isLastRow = false, activeImage, active
     }
 
     const onContextMenu = (event, columnId = null) => {
+        return // navigateTo doesn't work
+
         event.preventDefault()
         event.stopPropagation()
 
