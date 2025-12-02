@@ -251,9 +251,12 @@ function ImageItem({ image, layerIds = [], height, dimensionsLoaded = false, sel
     )
 }
 
-function Checkerboard() {
+function Checkerboard({ halfScale = false }) {
     return (
-        <div className="absolute inset-0 rounded-[inherit]" style={{ backgroundImage: `url("/checkerboard.svg")` }} />
+        <div
+            className="absolute inset-0 rounded-[inherit]"
+            style={{ backgroundImage: `url("/checkerboard.svg")`, backgroundSize: halfScale ? "15px" : "30px" }}
+        />
     )
 }
 
@@ -762,7 +765,7 @@ function TableRow({ row, itemId, columns, isLastRow = false, activeImage, active
                                       <div className="w-full h-[30px] relative rounded-sm bg-secondary transition-transform">
                                           {image && (
                                               <>
-                                                  <Checkerboard />
+                                                  <Checkerboard halfScale />
                                                   {activeImage === image && activeColumnIndex === columnIndex && (
                                                       <div className="absolute -inset-[3px] border-[1.5px] border-tint rounded">
                                                           <div className="bg-tint rounded-[inherit] absolute inset-0 opacity-15" />
