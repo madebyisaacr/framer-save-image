@@ -156,6 +156,7 @@ function CanvasView() {
                         </span>
                     ) : (
                         <div className="w-full bg-tertiary dark:bg-secondary rounded flex center relative overflow-hidden">
+                            <Checkerboard />
                             <img
                                 src={`${images[0].url}?scale-down-to=512`}
                                 alt={images[0].altText}
@@ -230,6 +231,7 @@ function ImageItem({ image, layerIds = [], height, dimensionsLoaded = false, sel
             onClick={onClick}
             onContextMenu={onContextMenu}
         >
+            <Checkerboard />
             {selected && (
                 <div className="absolute -inset-[4px] border-2 border-tint rounded-[12px]">
                     <div className="bg-tint rounded-[inherit] absolute inset-0 opacity-15" />
@@ -246,6 +248,12 @@ function ImageItem({ image, layerIds = [], height, dimensionsLoaded = false, sel
             )}
             <div className="absolute inset-0 border border-image-border rounded-[inherit]" />
         </div>
+    )
+}
+
+function Checkerboard() {
+    return (
+        <div className="absolute inset-0 rounded-[inherit]" style={{ backgroundImage: `url("/checkerboard.svg")` }} />
     )
 }
 
@@ -721,6 +729,7 @@ function TableRow({ row, columns, isLastRow = false, activeImage, activeColumnIn
                                       <div className="w-full h-[30px] relative rounded-sm bg-secondary transition-transform">
                                           {image && (
                                               <>
+                                                  <Checkerboard />
                                                   {activeImage === image && activeColumnIndex === columnIndex && (
                                                       <div className="absolute -inset-[3px] border-[1.5px] border-tint rounded">
                                                           <div className="bg-tint rounded-[inherit] absolute inset-0 opacity-15" />
