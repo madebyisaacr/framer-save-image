@@ -127,6 +127,11 @@ function CanvasView() {
         return columns
     }, [images, dimensions])
 
+    const onSingleImageContextMenu = event => {
+        event.preventDefault()
+        imageContextMenu(event, images[0])
+    }
+
     return (
         <main className="flex-col gap-3 w-full max-h-[500px] select-none overflow-hidden">
             {images.length <= 1 ? (
@@ -155,7 +160,10 @@ function CanvasView() {
                             Select an image
                         </span>
                     ) : (
-                        <div className="w-full bg-tertiary dark:bg-secondary rounded flex center relative overflow-hidden">
+                        <div
+                            onContextMenu={onSingleImageContextMenu}
+                            className="w-full bg-tertiary dark:bg-secondary rounded flex center relative overflow-hidden"
+                        >
                             <Checkerboard />
                             <img
                                 src={`${images[0].url}?scale-down-to=512`}
@@ -208,7 +216,7 @@ function ImageItem({ image, layerIds = [], height, dimensionsLoaded = false, sel
 
         imageContextMenu(event, image, [
             {
-                label: layerIds.length === 1 ? "Select 1 Layer" : `Select ${layerIds.length} Layers`,
+                label: layerIds.length === 1 ? "Select Layer" : `Select ${layerIds.length} Layers`,
                 onAction: () => {
                     framer.setSelection(layerIds)
                 },
