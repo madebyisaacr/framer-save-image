@@ -68,7 +68,7 @@ export async function copyImage(image) {
 export async function copyImageUrlToClipboard(url) {
     if (!url) return
 
-    const success = await copyToClipboard(image.url)
+    const success = await copyToClipboard(url)
     if (success) {
         framer.notify("Image URL copied to clipboard!", { variant: "success" })
     } else {
@@ -88,25 +88,27 @@ export async function downloadImage(image) {
 }
 
 export function imageContextMenu(event, image, precedingListItems = []) {
+    if (!image) return
+
     void framer.showContextMenu(
         [
             ...precedingListItems,
             {
                 label: "Copy Image",
                 onAction: async () => {
-                    copyImage(image)
+                    withLoadingNotification(copyImage(image), "Copying image...")
                 },
             },
             {
                 label: "Copy URL",
                 onAction: async () => {
-                    copyImageUrlToClipboard(image.url)
+                    withLoadingNotification(copyImageUrlToClipboard(image.url), "Copying image URL...")
                 },
             },
             {
                 label: "Download",
                 onAction: async () => {
-                    downloadImage(image)
+                    withLoadingNotification(downloadImage(image), "Downloading image...")
                 },
             },
         ],
@@ -117,4 +119,18 @@ export function imageContextMenu(event, image, precedingListItems = []) {
             },
         }
     )
+}
+
+async function withLoadingNotification(promise, message) {
+    let notification = null
+    const timeout = setTimeout(() => {
+        notification = framer.notify(message, { variant: "info", durationMs: 10000 })
+    }, 200)
+
+    await promise
+
+    clearTimeout(timeout)
+    if (notification) {
+        notification.close()
+    }
 }

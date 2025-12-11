@@ -129,6 +129,8 @@ function CanvasView() {
 
     const onSingleImageContextMenu = event => {
         event.preventDefault()
+        event.stopPropagation()
+
         imageContextMenu(event, images[0])
     }
 
