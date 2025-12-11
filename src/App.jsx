@@ -2,7 +2,6 @@ import { framer, isFrameNode, isComponentInstanceNode, isImageAsset } from "fram
 import { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react"
 import "./App.css"
 import { imageContextMenu } from "./imageUtils"
-import { copyToClipboard } from "./utils"
 import { useDynamicPluginHeight } from "./useDynamicPluginHeight"
 import classNames from "classnames"
 
@@ -20,6 +19,7 @@ export function App() {
                     try {
                         window.open(GITHUB_URL, "_blank")
                     } catch (error) {
+                        console.error(error)
                         framer.notify(`Failed to open link: ${GITHUB_URL}`, { variant: "error" })
                     }
                 },
