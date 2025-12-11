@@ -33,30 +33,25 @@ export async function copyToClipboard(text) {
     }
 }
 
-export function downloadFile(url, name) {
+export async function downloadFile(url, name) {
     try {
         // Fetch the image as a blob
-        fetch(url)
-            .then(response => response.blob())
-            .then(blob => {
-                // Create a blob URL
-                const blobUrl = window.URL.createObjectURL(blob)
+        const response = await fetch(url)
+        const blob = await response.blob()
 
-                // Create and trigger download
-                const link = document.createElement("a")
-                link.href = blobUrl
-                link.download = name
-                document.body.appendChild(link)
-                link.click()
+        // Create a blob URL
+        const blobUrl = window.URL.createObjectURL(blob)
 
-                // Cleanup
-                document.body.removeChild(link)
-                window.URL.revokeObjectURL(blobUrl)
-            })
-            .catch(err => {
-                console.error(err)
-                return false
-            })
+        // Create and trigger download
+        const link = document.createElement("a")
+        link.href = blobUrl
+        link.download = name
+        document.body.appendChild(link)
+        link.click()
+
+        // Cleanup
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(blobUrl)
 
         return true
     } catch (err) {

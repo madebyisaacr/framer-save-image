@@ -716,22 +716,31 @@ function TableRow({
         }
     }
 
-    const onContextMenu = (event, columnId = null) => {
-        return // navigateTo doesn't work
-
+    const onContextMenu = (event, columnId, imageIndex) => {
         event.preventDefault()
         event.stopPropagation()
+
+        const image = row.columns?.[columnId]?.[imageIndex]
+        if (!image) return
 
         void framer.showContextMenu(
             [
                 {
-                    label: columnId ? "View Image" : "View Item",
+                    label: "Copy Image",
                     onAction: async () => {
-                        if (columnId) {
-                            void framer.navigateTo(itemId, { select: true, scrollTo: { collectionFieldId: columnId } })
-                        } else {
-                            void framer.navigateTo(itemId, { select: true })
-                        }
+                        copyImage(image)
+                    },
+                },
+                {
+                    label: "Copy URL",
+                    onAction: async () => {
+                        copyImageUrlToClipboard(image.url)
+                    },
+                },
+                {
+                    label: "Download",
+                    onAction: async () => {
+                        downloadImage(image)
                     },
                 },
             ],
@@ -750,7 +759,6 @@ function TableRow({
                 "text-secondary group hover:text-primary font-medium px-3 relative",
                 includesActiveImage && "bg-[#FCFCFC] dark:bg-[#161616]"
             )}
-            onContextMenu={event => onContextMenu(event)}
         >
             <td className="text-nowrap px-3 cursor-pointer flex-col items-start w-[250px]" onClick={handleTitleClick}>
                 <div className="flex-row gap-2.5 items-center overflow-hidden h-10 w-full">
@@ -769,7 +777,6 @@ function TableRow({
                             minWidth: columnWidths[columnIndex] || 65,
                             maxWidth: columnWidths[columnIndex] || 65,
                         }}
-                        onContextMenu={event => onContextMenu(event, column.id)}
                     >
                         {Array.isArray(row.columns?.[column.id])
                             ? row.columns[column.id].map((image, index) => (
@@ -780,6 +787,7 @@ function TableRow({
                                       onClick={() =>
                                           changeActiveImage(image, imageElements.current[index], row.id, columnIndex)
                                       }
+                                      onContextMenu={event => onContextMenu(event, column.id, index)}
                                   >
                                       <div className="w-full h-[30px] relative rounded-sm bg-secondary transition-transform">
                                           {image && (
@@ -821,101 +829,31 @@ function ImageButtons({ image, horizontal = false, onButtonClick = null }) {
         if (!image) return
 
         setIsCopying(true)
-
-        try {
-            // Fetch the image as a blob
-            const response = await fetch(image.url)
-            const blob = await response.blob()
-
-            // Handle SVG separately by copying as text
-            if (blob.type === "image/svg+xml") {
-                const text = await blob.text()
-                await navigator.clipboard.writeText(text)
-                framer.notify("SVG copied to clipboard!", { variant: "success" })
-                setIsCopying(false)
-                if (onButtonClick) onButtonClick()
-                return
-            }
-
-            // Convert all other image types except PNG to PNG
-            let finalBlob = blob
-            if (blob.type !== "image/png") {
-                // Create an image element to load the image
-                const img = new Image()
-                const canvas = document.createElement("canvas")
-                const ctx = canvas.getContext("2d")
-
-                // Convert blob to data URL
-                const dataUrl = URL.createObjectURL(blob)
-
-                // Wait for image to load
-                await new Promise((resolve, reject) => {
-                    img.onload = resolve
-                    img.onerror = reject
-                    img.src = dataUrl
-                })
-
-                // Set canvas dimensions to match image
-                canvas.width = img.width
-                canvas.height = img.height
-
-                // Draw image to canvas
-                ctx.drawImage(img, 0, 0)
-
-                // Convert canvas to PNG blob
-                finalBlob = await new Promise(resolve => {
-                    canvas.toBlob(resolve, "image/png")
-                })
-
-                // Clean up
-                URL.revokeObjectURL(dataUrl)
-            }
-
-            // Create a ClipboardItem
-            const clipboardItem = new ClipboardItem({ [finalBlob.type]: finalBlob })
-
-            // Write to clipboard
-            await navigator.clipboard.write([clipboardItem])
-            framer.notify("Image copied to clipboard!", { variant: "success" })
-        } catch (err) {
-            console.error(err)
-            framer.notify("Failed to copy image", { variant: "error" })
-        }
-
+        await copyImage(image)
         setIsCopying(false)
 
-        if (onButtonClick) onButtonClick()
+        if (onButtonClick) {
+            onButtonClick()
+        }
     }
 
-    function onCopyImageUrlClick() {
+    async function onCopyImageUrlClick() {
         if (!image) return
 
         setIsCopyingUrl(true)
-
-        const success = copyToClipboard(image.url)
-        if (success) {
-            framer.notify("Image URL copied to clipboard!", { variant: "success" })
-        } else {
-            framer.notify("Failed to copy image URL", { variant: "error" })
-        }
-
+        await copyImageUrlToClipboard(image.url)
         setIsCopyingUrl(false)
 
-        if (onButtonClick) onButtonClick()
+        if (onButtonClick) {
+            onButtonClick()
+        }
     }
 
-    function onDownloadImageClick() {
+    async function onDownloadImageClick() {
         if (!image) return
 
         setIsDownloading(true)
-
-        const success = downloadFile(image.url, image.id)
-        if (success) {
-            framer.notify("Image downloaded!", { variant: "success" })
-        } else {
-            framer.notify("Failed to download image", { variant: "error" })
-        }
-
+        await downloadImage(image)
         setIsDownloading(false)
 
         if (onButtonClick) onButtonClick()
@@ -1045,4 +983,90 @@ function getImageAssets(object, level = 0) {
     }
 
     return imageAssets
+}
+
+async function copyImage(image) {
+    if (!image) return
+
+    try {
+        // Fetch the image as a blob
+        const response = await fetch(image.url)
+        const blob = await response.blob()
+
+        // Handle SVG separately by copying as text
+        if (blob.type === "image/svg+xml") {
+            const text = await blob.text()
+            await navigator.clipboard.writeText(text)
+            framer.notify("SVG copied to clipboard!", { variant: "success" })
+            return true
+        }
+
+        // Convert all other image types except PNG to PNG
+        let finalBlob = blob
+        if (blob.type !== "image/png") {
+            // Create an image element to load the image
+            const img = new Image()
+            const canvas = document.createElement("canvas")
+            const ctx = canvas.getContext("2d")
+
+            // Convert blob to data URL
+            const dataUrl = URL.createObjectURL(blob)
+
+            // Wait for image to load
+            await new Promise((resolve, reject) => {
+                img.onload = resolve
+                img.onerror = reject
+                img.src = dataUrl
+            })
+
+            // Set canvas dimensions to match image
+            canvas.width = img.width
+            canvas.height = img.height
+
+            // Draw image to canvas
+            ctx.drawImage(img, 0, 0)
+
+            // Convert canvas to PNG blob
+            finalBlob = await new Promise(resolve => {
+                canvas.toBlob(resolve, "image/png")
+            })
+
+            // Clean up
+            URL.revokeObjectURL(dataUrl)
+        }
+
+        // Create a ClipboardItem
+        const clipboardItem = new ClipboardItem({ [finalBlob.type]: finalBlob })
+
+        // Write to clipboard
+        await navigator.clipboard.write([clipboardItem])
+        framer.notify("Image copied to clipboard!", { variant: "success" })
+        return true
+    } catch (err) {
+        console.error(err)
+        framer.notify("Failed to copy image", { variant: "error" })
+        return false
+    }
+}
+
+async function copyImageUrlToClipboard(url) {
+    if (!url) return
+
+    const success = await copyToClipboard(image.url)
+    if (success) {
+        framer.notify("Image URL copied to clipboard!", { variant: "success" })
+    } else {
+        framer.notify("Failed to copy image URL", { variant: "error" })
+    }
+}
+
+async function downloadImage(image) {
+    if (!image) return
+
+    const success = await downloadFile(image.url, image.id)
+    if (success) {
+        framer.notify("Image downloaded!", { variant: "success" })
+    } else {
+        framer.notify("Failed to download image", { variant: "error" })
+    }
 }
