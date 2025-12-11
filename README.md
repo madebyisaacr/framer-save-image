@@ -1,6 +1,10 @@
-# Framer Plugin Template
+# Save Image Framer Plugin
 
-This is a template for using the Framer Plugin API in a TypeScript project.
+This is a Framer plugin for downloading and copying images in Framer. Works with images in frames, components, and CMS collections.
+
+[Open on Framer Marketplace](https://www.framer.com/marketplace/plugins/save-image/)
+
+![Save Image](https://www.framer.com/creators-assets/_next/image/?url=https%3A%2F%2Fy4pdgnepgswqffpt.public.blob.vercel-storage.com%2Fplugins%2F393-3xUfQdsILdWGjmotzmDw8UVcorYacc&w=3840&q=100)
 
 ## Quickstart
 
@@ -10,10 +14,6 @@ First, run the development server:
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Learn more: https://www.framer.com/developers/plugins/introduction

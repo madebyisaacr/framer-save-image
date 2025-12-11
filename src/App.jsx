@@ -2,14 +2,31 @@ import { framer, isFrameNode, isComponentInstanceNode, isImageAsset } from "fram
 import { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react"
 import "./App.css"
 import { imageContextMenu } from "./imageUtils"
+import { copyToClipboard } from "./utils"
 import { useDynamicPluginHeight } from "./useDynamicPluginHeight"
 import classNames from "classnames"
 
 const COLUMN_COUNT = 2
 const COLUMN_WIDTH = 110
 const MAX_IMAGES_CANVAS = 100
+const GITHUB_URL = "https://github.com/madebyisaacr/framer-save-image"
 
 export function App() {
+    useEffect(() => {
+        framer.setMenu([
+            {
+                label: "View Code on GitHub",
+                onAction: () => {
+                    try {
+                        window.open(GITHUB_URL, "_blank")
+                    } catch (error) {
+                        framer.notify(`Failed to open link: ${GITHUB_URL}`, { variant: "error" })
+                    }
+                },
+            },
+        ])
+    }, [])
+
     return framer.mode === "collection" ? <CollectionView /> : <CanvasView />
 }
 

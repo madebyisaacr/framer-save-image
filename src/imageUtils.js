@@ -124,7 +124,7 @@ export function imageContextMenu(event, image, precedingListItems = []) {
 async function withLoadingNotification(promise, message) {
     let notification = null
     const timeout = setTimeout(() => {
-        notification = framer.notify(message, { variant: "info", durationMs: 10000 })
+        notification = framer.notify(message, { variant: "info", durationMs: 60000 })
     }, 200)
 
     await promise
