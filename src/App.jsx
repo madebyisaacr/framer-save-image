@@ -526,7 +526,7 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
     }
 
     // Calculate deterministic width based on column content
-    const pluginWidth = useMemo(() => {
+    const [pluginWidth, columnWidths] = useMemo(() => {
         const NAME_COLUMN_WIDTH = 250
         const MAX_PLUGIN_WIDTH = 600
         const IMAGE_WIDTH = 50
@@ -535,6 +535,7 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
 
         // Calculate width for each column based on max images in any cell
         let totalColumnWidth = NAME_COLUMN_WIDTH
+        const columnWidths = []
 
         for (const column of columns) {
             // Find the maximum number of images in any cell in this column
@@ -554,15 +555,16 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
             const columnWidth =
                 effectiveImageCount > 0
                     ? Math.max(
-                          100,
+                          65,
                           effectiveImageCount * IMAGE_WIDTH + (effectiveImageCount - 1) * IMAGE_GAP + COLUMN_PADDING
                       )
-                    : 100 // Default to 100 if no images
+                    : 65 // Default to 100 if no images
 
+            columnWidths.push(columnWidth)
             totalColumnWidth += columnWidth
         }
 
-        return Math.min(totalColumnWidth, MAX_PLUGIN_WIDTH)
+        return [Math.min(totalColumnWidth, MAX_PLUGIN_WIDTH), columnWidths]
     }, [rows, columns])
 
     useLayoutEffect(() => {
@@ -613,8 +615,12 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
                         <thead className="h-10 text-left">
                             <tr className="relative">
                                 <TableHeading className="min-w-[100px] pl-3">{titleColumnName}</TableHeading>
-                                {columns.map(column => (
-                                    <TableHeading key={column.id} className="pr-3">
+                                {columns.map((column, columnIndex) => (
+                                    <TableHeading
+                                        key={column.id}
+                                        className="pr-3"
+                                        width={columnWidths[columnIndex] || 65}
+                                    >
                                         {column.name}
                                     </TableHeading>
                                 ))}
@@ -639,6 +645,7 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
                                         row={row}
                                         itemId={row.id}
                                         columns={columns}
+                                        columnWidths={columnWidths}
                                         isLastRow={index === filteredArray.length - 1}
                                         isCollectionMode={isCollectionMode}
                                         activeImage={activeImage}
@@ -658,20 +665,27 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
     )
 }
 
-function TableHeading({ children, className }) {
+function TableHeading({ children, className, width }) {
     return (
         <th
-            className={classNames(
-                "text-tertiary font-medium max-w-[100px] overflow-ellipsis overflow-hidden text-nowrap",
-                className
-            )}
+            className={classNames("text-tertiary font-medium overflow-ellipsis overflow-hidden text-nowrap", className)}
+            style={{ width: width, minWidth: width, maxWidth: width }}
         >
             {children}
         </th>
     )
 }
 
-function TableRow({ row, itemId, columns, isLastRow = false, activeImage, activeColumnIndex, changeActiveImage }) {
+function TableRow({
+    row,
+    itemId,
+    columns,
+    columnWidths,
+    isLastRow = false,
+    activeImage,
+    activeColumnIndex,
+    changeActiveImage,
+}) {
     const imageElements = useRef([])
 
     const includesActiveImage = useMemo(() => {
@@ -749,7 +763,12 @@ function TableRow({ row, itemId, columns, isLastRow = false, activeImage, active
             {columns.map((column, columnIndex) => (
                 <td key={`${row.id}-${column.id}-${columnIndex}`} className="align-top">
                     <div
-                        className="flex-row gap-1 pr-3 flex-wrap min-w-[100px] py-[10px]"
+                        className="flex-row gap-1 pr-3 flex-wrap py-2"
+                        style={{
+                            width: columnWidths[columnIndex] || 65,
+                            minWidth: columnWidths[columnIndex] || 65,
+                            maxWidth: columnWidths[columnIndex] || 65,
+                        }}
                         onContextMenu={event => onContextMenu(event, column.id)}
                     >
                         {Array.isArray(row.columns?.[column.id])
