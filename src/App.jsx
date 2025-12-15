@@ -1,13 +1,18 @@
 import { framer, isFrameNode, isComponentInstanceNode, isImageAsset } from "framer-plugin"
 import { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react"
 import "./App.css"
-import { imageContextMenu } from "./imageUtils"
+import { imageContextMenu, copyImage, copyImageUrlToClipboard, downloadImage } from "./imageUtils"
 import { useDynamicPluginHeight } from "./useDynamicPluginHeight"
 import classNames from "classnames"
 
 const COLUMN_COUNT = 2
 const COLUMN_WIDTH = 110
 const MAX_IMAGES_CANVAS = 100
+const NAME_COLUMN_WIDTH = 300
+const MAX_PLUGIN_WIDTH = 600
+const IMAGE_WIDTH = 50
+const IMAGE_GAP = 5
+const COLUMN_PADDING = 15
 const GITHUB_URL = "https://github.com/madebyisaacr/framer-save-image"
 
 export function App() {
@@ -423,8 +428,8 @@ function CollectionView() {
         if (!isLoading && (columns.length === 0 || !hasAnyImages)) {
             framer.showUI({
                 position: "top right",
-                width: 300,
-                height: 300,
+                width: 365,
+                height: 306,
             })
         }
     }, [isLoading, columns.length, hasAnyImages])
@@ -487,7 +492,7 @@ function CollectionView() {
                         </svg>
                     </div>
                     <span className="text-primary font-semibold">No images found</span>
-                    <span className="text-tertiary">
+                    <span className="text-tertiary" style={{ maxWidth: NAME_COLUMN_WIDTH }}>
                         {columns.length === 0
                             ? "This collection doesn't have any image or gallery fields."
                             : "No items in this collection have any images."}
@@ -547,12 +552,6 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
 
     // Calculate deterministic width based on column content
     const [pluginWidth, columnWidths] = useMemo(() => {
-        const NAME_COLUMN_WIDTH = 250
-        const MAX_PLUGIN_WIDTH = 600
-        const IMAGE_WIDTH = 50
-        const IMAGE_GAP = 5
-        const COLUMN_PADDING = 15
-
         // Calculate width for each column based on max images in any cell
         let totalColumnWidth = NAME_COLUMN_WIDTH
         const columnWidths = []
@@ -634,7 +633,12 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
                     <table>
                         <thead className="h-10 text-left">
                             <tr className="relative">
-                                <TableHeading className="min-w-[100px] pl-3">{titleColumnName}</TableHeading>
+                                <TableHeading
+                                    className="pl-3"
+                                    width={NAME_COLUMN_WIDTH}
+                                >
+                                    {titleColumnName}
+                                </TableHeading>
                                 {columns.map((column, columnIndex) => (
                                     <TableHeading
                                         key={column.id}
@@ -753,7 +757,11 @@ function TableRow({
                 includesActiveImage && "bg-[#FCFCFC] dark:bg-[#161616]"
             )}
         >
-            <td className="text-nowrap px-3 cursor-pointer flex-col items-start w-[250px]" onClick={handleTitleClick}>
+            <td
+                className="text-nowrap px-3 cursor-pointer flex-col items-start"
+                style={{ width: NAME_COLUMN_WIDTH, maxWidth: NAME_COLUMN_WIDTH }}
+                onClick={handleTitleClick}
+            >
                 <div className="flex-row gap-2.5 items-center overflow-hidden h-10 w-full">
                     <span className={classNames("truncate", includesActiveImage && "text-primary")} title={row.title}>
                         {row.title}
