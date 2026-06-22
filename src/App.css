@@ -7,6 +7,7 @@
     --color-divider-secondary: #e6e6e6;
     --color-image-border: rgba(0, 0, 0, 0.06);
     --color-bg-modal: var(--framer-color-bg);
+    --border-color: rgba(0, 0, 0, 0.05);
 }
 
 [data-framer-theme="dark"] {
@@ -14,6 +15,7 @@
     --color-divider-secondary: #444;
     --color-image-border: rgba(255, 255, 255, 0.1);
     --color-bg-modal: #2b2b2b;
+    --border-color: rgba(255, 255, 255, 0.07);
 }
 
 button {
@@ -51,4 +53,16 @@ select:not([disabled]) {
 
 a {
     @apply text-tint hover:underline;
+}
+
+.framer-border {
+    box-shadow: inset 0 0 0 1px var(--border-color);
+}
+
+.framer-box-color {
+    background-color: var(--framer-color-bg-secondary);
+}
+
+[data-framer-theme="dark"] .framer-box-color {
+    background-color: #1f1f1f;
 }

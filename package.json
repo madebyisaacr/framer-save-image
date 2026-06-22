@@ -11,9 +11,9 @@
         "pack": "npx framer-plugin-tools@latest pack"
     },
     "dependencies": {
+        "@framer/plugin": "^4.0.1",
         "autoprefixer": "^10.4.21",
         "classnames": "^2.5.1",
-        "framer-plugin": "^3.8.0",
         "postcss": "^8.5.4",
         "react": "^18",
         "react-dom": "^18",

@@ -157,27 +157,38 @@ function CanvasView() {
     }
 
     return (
-        <main className="flex-col gap-3 w-full max-h-[500px] select-none overflow-hidden">
+        <main className="flex-col gap-2 w-full max-h-[500px] select-none overflow-hidden">
             {images.length <= 1 ? (
-                <div className="flex-col w-full relative px-3 pb-3 gap-3 overflow-hidden">
+                <div className="flex-col w-full relative px-3 pb-3 gap-2 overflow-hidden">
                     {images.length > 1 && <div className="absolute inset-x-3 top-0 h-px bg-divider z-10" />}
                     {images.length === 0 ? (
-                        <span className="w-full overflow-hidden bg-tertiary dark:bg-secondary rounded flex center relative text-secondary aspect-video flex-col center gap-2">
+                        <span className="w-full overflow-hidden bg-tertiary rounded flex center relative text-secondary aspect-video flex-col center gap-2 framer-border">
                             <div className="size-[22px] relative flex center">
-                                <div className="absolute inset-0 rounded-[4px] bg-[var(--framer-color-text)] opacity-15" />
+                                <div className="absolute inset-0 rounded-[6px] bg-[var(--framer-color-text)] opacity-15" />
                                 <svg
+                                    role="presentation"
                                     xmlns="http://www.w3.org/2000/svg"
-                                    width="22"
-                                    height="22"
-                                    className="text-secondary"
+                                    width="12"
+                                    height="12"
+                                    viewBox="0 0 12 12"
+                                    fill="none"
                                 >
                                     <path
-                                        d="M 10.838 9.29 C 10.444 8.683 9.556 8.683 9.162 9.29 L 4.504 16.455 C 4.072 17.12 4.549 18 5.343 18 L 14.657 18 C 15.451 18 15.928 17.12 15.496 16.455 Z"
-                                        fill="currentColor"
+                                        fill="transparent"
+                                        stroke="currentColor"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="1.5"
+                                        d="M1.25 3.25a2 2 0 0 1 2-2h5.5a2 2 0 0 1 2 2v5.5a2 2 0 0 1-2 2h-5.5a2 2 0 0 1-2-2Z"
                                     ></path>
                                     <path
-                                        d="M 16 4 C 17.105 4 18 4.895 18 6 C 18 7.105 17.105 8 16 8 C 14.895 8 14 7.105 14 6 C 14 4.895 14.895 4 16 4 Z"
                                         fill="currentColor"
+                                        fillOpacity="0.2"
+                                        stroke="currentColor"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="1.5"
+                                        d="M1.848 7.56a7 7 0 0 1 8.304 0l.598.44v.75a2 2 0 0 1-2 2h-5.5a2 2 0 0 1-2-2V8Z"
                                     ></path>
                                 </svg>
                             </div>
@@ -203,7 +214,7 @@ function CanvasView() {
             ) : (
                 <div className="flex-col w-full relative overflow-y-auto">
                     {images.length > 1 && <div className="absolute inset-x-3 top-0 h-px bg-divider z-10" />}
-                    <div ref={scrollRef} className="p-3 flex-row gap-2">
+                    <div ref={scrollRef} className="px-3 py-2 flex-row gap-2">
                         {imageColumns.map((columnImages, i) => (
                             <div key={`column-${i}`} className="flex-col gap-2 flex-1">
                                 {columnImages.map(image => (
@@ -222,7 +233,7 @@ function CanvasView() {
                             </div>
                         ))}
                     </div>
-                    <div className="flex-col gap-3 p-3 sticky bottom-0 bg-primary">
+                    <div className="flex-col gap-2 px-3 pb-3 pt-2 sticky bottom-0 bg-primary">
                         <div className="absolute top-0 inset-x-3 h-px bg-divider" />
                         <ImageButtons image={selectedImage} />
                     </div>
@@ -443,7 +454,7 @@ function CollectionView() {
             )}
         >
             {collections.length > 1 && (
-                <div className="flex-col px-3 pb-3">
+                <div className="flex-col px-3 pb-2">
                     <select
                         value={collection?.id}
                         onChange={e => setCollection(collections.find(c => c.id === e.target.value))}
@@ -479,23 +490,11 @@ function CollectionView() {
                 />
             ) : (
                 <div className="flex-col pt-6 pb-10 center gap-1.5 px-3 w-full flex-1 text-center text-balance">
-                    <div className="size-[22px] relative flex center bg-tint rounded-[4px] mb-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" className="text-reversed">
-                            <path
-                                d="M 10.838 9.29 C 10.444 8.683 9.556 8.683 9.162 9.29 L 4.504 16.455 C 4.072 17.12 4.549 18 5.343 18 L 14.657 18 C 15.451 18 15.928 17.12 15.496 16.455 Z"
-                                fill="currentColor"
-                            ></path>
-                            <path
-                                d="M 16 4 C 17.105 4 18 4.895 18 6 C 18 7.105 17.105 8 16 8 C 14.895 8 14 7.105 14 6 C 14 4.895 14.895 4 16 4 Z"
-                                fill="currentColor"
-                            ></path>
-                        </svg>
-                    </div>
                     <span className="text-primary font-semibold">No images found</span>
                     <span className="text-tertiary" style={{ maxWidth: NAME_COLUMN_WIDTH }}>
                         {columns.length === 0
                             ? "This collection doesn't have any image or gallery fields."
-                            : "No items in this collection have any images."}
+                            : "No items in this collection have images."}
                     </span>
                 </div>
             )}
@@ -633,10 +632,7 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
                     <table>
                         <thead className="h-10 text-left">
                             <tr className="relative">
-                                <TableHeading
-                                    className="pl-3"
-                                    width={NAME_COLUMN_WIDTH}
-                                >
+                                <TableHeading className="pl-3" width={NAME_COLUMN_WIDTH}>
                                     {titleColumnName}
                                 </TableHeading>
                                 {columns.map((column, columnIndex) => (
@@ -680,7 +676,7 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
                         </tbody>
                     </table>
                 </div>
-                <div className="flex-col gap-3 p-3 sticky bottom-0 bg-primary">
+                <div className="flex-col gap-2 p-3 sticky bottom-0 bg-primary">
                     <div className="absolute inset-x-3 top-0 h-px bg-divider" />
                     <ImageButtons image={activeImage} horizontal />
                 </div>
@@ -692,7 +688,10 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
 function TableHeading({ children, className, width }) {
     return (
         <th
-            className={classNames("text-tertiary font-medium overflow-ellipsis overflow-hidden text-nowrap", className)}
+            className={classNames(
+                "text-tertiary font-semibold overflow-ellipsis overflow-hidden text-nowrap",
+                className
+            )}
             style={{ width: width, minWidth: width, maxWidth: width }}
         >
             {children}
