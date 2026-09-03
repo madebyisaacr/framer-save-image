@@ -1,4 +1,4 @@
-import { framer } from "framer-plugin"
+import { framer } from "@framer/plugin"
 import { copyToClipboard, downloadFile } from "./utils"
 
 export async function copyImage(image) {

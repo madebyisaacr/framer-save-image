@@ -1,4 +1,4 @@
-import { framer, UIOptions } from "framer-plugin"
+import { framer, UIOptions } from "@framer/plugin"
 import { useLayoutEffect } from "react"
 
 // Automatically resize the plugin to match the height of the content.

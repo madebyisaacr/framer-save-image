@@ -66,3 +66,13 @@ a {
 [data-framer-theme="dark"] .framer-box-color {
     background-color: #1f1f1f;
 }
+
+[data-framer-theme="light"] .inset-x-edge {
+    left: 0px;
+    right: 0px;
+}
+
+[data-framer-theme="dark"] .inset-x-edge {
+    left: 1px;
+    right: 1px;
+}

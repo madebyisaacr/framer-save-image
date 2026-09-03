@@ -1,4 +1,4 @@
-import { framer, isFrameNode, isComponentInstanceNode, isImageAsset } from "framer-plugin"
+import { framer, isFrameNode, isComponentInstanceNode, isImageAsset } from "@framer/plugin"
 import { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react"
 import "./App.css"
 import { imageContextMenu, copyImage, copyImageUrlToClipboard, downloadImage } from "./imageUtils"
@@ -12,7 +12,7 @@ const NAME_COLUMN_WIDTH = 300
 const MAX_PLUGIN_WIDTH = 600
 const IMAGE_WIDTH = 50
 const IMAGE_GAP = 5
-const COLUMN_PADDING = 15
+const COLUMN_PADDING = 20
 const GITHUB_URL = "https://github.com/madebyisaacr/framer-save-image"
 
 export function App() {
@@ -528,7 +528,9 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
         let totalColumnWidth = NAME_COLUMN_WIDTH
         const columnWidths = []
 
-        for (const column of columns) {
+        for (let i = 0; i < columns.length; i++) {
+            const column = columns[i]
+
             // Find the maximum number of images in any cell in this column
             let maxImagesInColumn = 0
             for (const row of rows) {
@@ -543,13 +545,15 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
             const effectiveImageCount = Math.min(maxImagesInColumn, 3)
 
             // Calculate column width: N images * 30px + (N-1) gaps * 5px + 15px padding
-            const columnWidth =
+            const baseColumnWidth =
                 effectiveImageCount > 0
                     ? Math.max(
                           65,
                           effectiveImageCount * IMAGE_WIDTH + (effectiveImageCount - 1) * IMAGE_GAP + COLUMN_PADDING
                       )
                     : 65 // Default to 100 if no images
+
+            const columnWidth = baseColumnWidth + (i === columns.length - 1 ? 5 : 0)
 
             columnWidths.push(columnWidth)
             totalColumnWidth += columnWidth
@@ -600,7 +604,7 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
     return (
         <div ref={ref} className="overflow-y-auto overflow-x-hidden flex-col select-none relative w-full">
             <div className="flex-col w-full relative">
-                <div className="sticky top-0 h-px bg-divider mx-3" />
+                <div className="sticky top-0 h-px bg-divider mx-px" />
                 <div className="w-full overflow-x-auto">
                     <table>
                         <thead className="h-10 text-left">
@@ -611,13 +615,13 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
                                 {columns.map((column, columnIndex) => (
                                     <TableHeading
                                         key={column.id}
-                                        className="pr-3"
+                                        className="px-2"
                                         width={columnWidths[columnIndex] || 65}
                                     >
                                         {column.name}
                                     </TableHeading>
                                 ))}
-                                <div className="absolute inset-x-3 bottom-0 h-px bg-divider" />
+                                <div className="absolute inset-x-edge bottom-0 h-px bg-divider" />
                             </tr>
                         </thead>
                         <tbody>
@@ -650,7 +654,7 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
                     </table>
                 </div>
                 <div className="flex-col gap-2 p-3 sticky bottom-0 bg-primary">
-                    <div className="absolute inset-x-3 top-0 h-px bg-divider" />
+                    <div className="absolute inset-x-edge top-0 h-px bg-divider" />
                     <ImageButtons image={activeImage} horizontal />
                 </div>
             </div>
@@ -730,7 +734,7 @@ function TableRow({
             )}
         >
             <td
-                className="text-nowrap px-3 cursor-pointer flex-col items-start"
+                className="text-nowrap pl-3 pr-2 cursor-pointer flex-col items-start border-r border-r-divider"
                 style={{ width: NAME_COLUMN_WIDTH, maxWidth: NAME_COLUMN_WIDTH }}
                 onClick={handleTitleClick}
             >
@@ -739,12 +743,21 @@ function TableRow({
                         {row.title}
                     </span>
                 </div>
-                {!isLastRow && <div className="absolute inset-x-3 bottom-0 h-px bg-divider" />}
+                {!isLastRow && <div className="absolute inset-x-edge bottom-0 h-px bg-divider" />}
             </td>
             {columns.map((column, columnIndex) => (
-                <td key={`${row.id}-${column.id}-${columnIndex}`} className="align-top">
+                <td
+                    key={`${row.id}-${column.id}-${columnIndex}`}
+                    className={classNames(
+                        "align-top",
+                        columnIndex !== columns.length - 1 ? "border-r border-r-divider" : ""
+                    )}
+                >
                     <div
-                        className="flex-row gap-1 pr-3 flex-wrap py-2"
+                        className={classNames(
+                            "flex-row gap-1 flex-wrap py-2",
+                            columnIndex === columns.length - 1 ? "pl-2 pr-3" : "px-2"
+                        )}
                         style={{
                             width: columnWidths[columnIndex] || 65,
                             minWidth: columnWidths[columnIndex] || 65,
