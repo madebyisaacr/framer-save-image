@@ -163,35 +163,34 @@ function CanvasView() {
                     {images.length > 1 && <div className="absolute inset-x-3 top-0 h-px bg-divider z-10" />}
                     {images.length === 0 ? (
                         <span className="w-full overflow-hidden bg-tertiary rounded flex center relative text-secondary aspect-video flex-col center gap-2 framer-border">
-                            <div className="size-[22px] relative flex center">
-                                <div className="absolute inset-0 rounded-[6px] bg-[var(--framer-color-text)] opacity-15" />
-                                <svg
-                                    role="presentation"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="12"
-                                    height="12"
-                                    viewBox="0 0 12 12"
-                                    fill="none"
-                                >
-                                    <path
-                                        fill="transparent"
-                                        stroke="currentColor"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="1.5"
-                                        d="M1.25 3.25a2 2 0 0 1 2-2h5.5a2 2 0 0 1 2 2v5.5a2 2 0 0 1-2 2h-5.5a2 2 0 0 1-2-2Z"
-                                    ></path>
-                                    <path
-                                        fill="currentColor"
-                                        fillOpacity="0.2"
-                                        stroke="currentColor"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth="1.5"
-                                        d="M1.848 7.56a7 7 0 0 1 8.304 0l.598.44v.75a2 2 0 0 1-2 2h-5.5a2 2 0 0 1-2-2V8Z"
-                                    ></path>
-                                </svg>
-                            </div>
+                            <svg
+                                role="presentation"
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="18"
+                                height="18"
+                                viewBox="0 0 12 12"
+                                fill="none"
+                            >
+                                <path
+                                    fill="transparent"
+                                    stroke="currentColor"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="1.5"
+                                    className="[vector-effect:non-scaling-stroke]"
+                                    d="M1.25 3.25a2 2 0 0 1 2-2h5.5a2 2 0 0 1 2 2v5.5a2 2 0 0 1-2 2h-5.5a2 2 0 0 1-2-2Z"
+                                ></path>
+                                <path
+                                    fill="currentColor"
+                                    fillOpacity="0.2"
+                                    stroke="currentColor"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="1.5"
+                                    className="[vector-effect:non-scaling-stroke]"
+                                    d="M1.848 7.56a7 7 0 0 1 8.304 0l.598.44v.75a2 2 0 0 1-2 2h-5.5a2 2 0 0 1-2-2V8Z"
+                                ></path>
+                            </svg>
                             Select an image
                         </span>
                     ) : (
