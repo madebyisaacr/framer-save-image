@@ -72,15 +72,14 @@ function CanvasView() {
                         }
                     }
                 } else if (isComponentInstanceNode(node)) {
-                    const imageAssets = getImageAssets(node.controls)
-                    for (const img of imageAssets) {
+                    const images = getImages(node.controls)
+                    for (const img of images) {
                         allImages.push(img)
-                        const imageId = img.id
-                        if (imageId) {
-                            if (!layerIdsMap.has(imageId)) {
-                                layerIdsMap.set(imageId, new Set())
+                        if (img.id) {
+                            if (!layerIdsMap.has(img.id)) {
+                                layerIdsMap.set(img.id, new Set())
                             }
-                            layerIdsMap.get(imageId).add(node.id)
+                            layerIdsMap.get(img.id).add(node.id)
                         }
                     }
                 }
@@ -90,16 +89,19 @@ function CanvasView() {
             const imageLayerIds = {}
 
             if (allImages.length > 0) {
-                // Remove duplicate images by id (or by reference if no id)
+                // Remove duplicate images by id and src (or by reference if no id or src)
                 const seen = new Set()
                 for (const img of allImages) {
-                    const key = img && img.id ? img.id : img
-                    if (!seen.has(key)) {
+                    if (!img) continue
+
+                    const key = img.id ?? img
+                    if (!seen.has(key) && !seen.has(img.src)) {
                         seen.add(key)
+                        seen.add(img.src)
                         uniqueImages.push(img)
 
                         // Convert Set to Array for the final object
-                        if (img && img.id && layerIdsMap.has(img.id)) {
+                        if (img.id && layerIdsMap.has(img.id)) {
                             imageLayerIds[img.id] = Array.from(layerIdsMap.get(img.id))
                         }
                     }
@@ -175,7 +177,7 @@ function CanvasView() {
                         >
                             <Checkerboard />
                             <img
-                                src={`${images[0].url}?scale-down-to=512`}
+                                src={`${images[0].src}?scale-down-to=512`}
                                 alt={images[0].altText}
                                 className="size-full object-contain relative rounded-[inherit] max-h-[400px]"
                                 draggable={false}
@@ -249,7 +251,7 @@ function ImageItem({ image, layerIds = [], height, dimensionsLoaded = false, sel
             )}
             {dimensionsLoaded && (
                 <img
-                    src={`${image.url}?scale-down-to=512`}
+                    src={`${image.src}?scale-down-to=512`}
                     alt={image.altText}
                     className="w-full h-full object-contain relative rounded-[inherit]"
                     style={{ maxHeight: height, minHeight: 10 }}
@@ -790,7 +792,7 @@ function TableRow({
                                                       </div>
                                                   )}
                                                   <img
-                                                      src={`${image.url}?scale-down-to=512`}
+                                                      src={`${image.src}?scale-down-to=512`}
                                                       alt={image.altText}
                                                       className="size-full object-cover rounded-[inherit] relative"
                                                       draggable={false}
@@ -834,7 +836,7 @@ function ImageButtons({ image, variant = "small", onButtonClick = null }) {
         if (!image) return
 
         setIsCopyingUrl(true)
-        await copyImageUrlToClipboard(image.url)
+        await copyImageUrlToClipboard(image.src)
         setIsCopyingUrl(false)
 
         if (onButtonClick) {
@@ -953,14 +955,14 @@ function useImageDimensions(images) {
                 if (image && image.width && image.height) {
                     newDimensions[image.id] = { width: image.width, height: image.height }
                     resolve()
-                } else if (image && image.url) {
+                } else if (image && image.src) {
                     const img = new window.Image()
                     img.onload = () => {
                         newDimensions[image.id] = { width: img.naturalWidth, height: img.naturalHeight }
                         resolve()
                     }
                     img.onerror = () => resolve()
-                    img.src = image.url
+                    img.src = image.src
                 } else {
                     resolve()
                 }
@@ -989,7 +991,7 @@ function calculateImageHeight(image, dimensions) {
     return COLUMN_WIDTH / defaultAspectRatio
 }
 
-function getImageAssets(object, level = 0) {
+function getImages(object, level = 0) {
     if (!object) return []
 
     // Prevent infinite recursion
@@ -997,21 +999,44 @@ function getImageAssets(object, level = 0) {
 
     const imageAssets = []
 
-    if (isImageAsset(object)) {
+    if (isImageAssetOrVariable(object)) {
+        console.log(object, !!object.src, isImageAssetOrVariable(object))
+    }
+
+    if (isImageAssetOrVariable(object)) {
         imageAssets.push(object)
     } else if (Array.isArray(object)) {
         for (const item of object) {
             if (typeof item === "object") {
-                imageAssets.push(...getImageAssets(item, level + 1))
+                imageAssets.push(...getImages(item, level + 1))
             }
         }
     } else if (typeof object === "object") {
         for (const key in object) {
             if (typeof object[key] === "object") {
-                imageAssets.push(...getImageAssets(object[key], level + 1))
+                imageAssets.push(...getImages(object[key], level + 1))
             }
         }
     }
 
-    return imageAssets
+    return imageAssets.map(img =>
+        isImageAsset(img)
+            ? {
+                  id: img.id,
+                  src: img.url,
+              }
+            : {
+                  id: img.id ?? img.src,
+                  src: img.src,
+              }
+    )
+}
+
+function isImageAssetOrVariable(imageAsset) {
+    if (isImageAsset(imageAsset)) {
+        return true
+    } else if (typeof imageAsset === "object" && imageAsset.type === "image" && imageAsset.src) {
+        return true
+    }
+    return false
 }
