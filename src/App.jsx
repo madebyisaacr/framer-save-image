@@ -46,7 +46,7 @@ function CanvasView() {
     useDynamicPluginHeight({
         position: "top right",
         width: framer.mode === "editImage" ? 400 : 260,
-        maxHeight: 500,
+        maxHeight: 600,
     })
 
     const { images, imageLayerIds } = useMemo(() => {
@@ -161,7 +161,7 @@ function CanvasView() {
     }
 
     return (
-        <main className="flex-col gap-2 w-full max-h-[500px] select-none overflow-hidden">
+        <main className="flex-col gap-2 w-full max-h-[600px] select-none overflow-hidden">
             {images.length <= 1 ? (
                 <div className="flex-col w-full relative px-3 pb-3 gap-2 overflow-hidden">
                     {images.length > 1 && <div className="absolute inset-x-3 top-0 h-px bg-divider z-10" />}
@@ -178,7 +178,7 @@ function CanvasView() {
                             <Checkerboard />
                             <img
                                 src={`${images[0].src}?scale-down-to=512`}
-                                alt={images[0].altText}
+                                alt={images[0].alt}
                                 className="size-full object-contain relative rounded-[inherit] max-h-[400px]"
                                 draggable={false}
                             />
@@ -252,7 +252,7 @@ function ImageItem({ image, layerIds = [], height, dimensionsLoaded = false, sel
             {dimensionsLoaded && (
                 <img
                     src={`${image.src}?scale-down-to=512`}
-                    alt={image.altText}
+                    alt={image.alt}
                     className="w-full h-full object-contain relative rounded-[inherit]"
                     style={{ maxHeight: height, minHeight: 10 }}
                     draggable={false}
@@ -380,13 +380,13 @@ function CollectionView() {
                                     }
                                 }
 
-                                columnValues[arrayField.id] = values
+                                columnValues[arrayField.id] = values.map(convertToImageObject)
                             }
                         }
                     } else {
                         const column = columns.find(c => c.id === field.id)
                         if (column) {
-                            columnValues[column.id] = [item.fieldData[field.id]?.value]
+                            columnValues[column.id] = [convertToImageObject(item.fieldData[field.id]?.value)]
                         }
                     }
                 }
@@ -428,12 +428,12 @@ function CollectionView() {
         <div
             ref={ref}
             className={classNames(
-                "flex-col max-h-[500px] select-none overflow-hidden",
+                "flex-col max-h-[600px] select-none overflow-hidden",
                 isLoading || columns.length === 0 || !hasAnyImages ? "size-full" : "w-full"
             )}
         >
             {collections.length > 1 && (
-                <div className="flex-col px-3 pb-3">
+                <div className="flex-col px-3 pb-2">
                     <select
                         value={collection?.id}
                         onChange={e => setCollection(collections.find(c => c.id === e.target.value))}
@@ -612,7 +612,7 @@ function Table({ containerRef, rows, columns, titleColumnName, splitButtons, isC
         <div ref={ref} className="overflow-y-auto overflow-x-hidden flex-col select-none relative w-full">
             <div className="flex-col w-full relative">
                 <div className="sticky top-0 h-px bg-divider mx-px" />
-                <div className="w-full overflow-x-auto overscroll-none">
+                <div className="w-full overflow-x-auto">
                     <table>
                         <thead className="h-10 text-left">
                             <tr className="relative">
@@ -736,6 +736,8 @@ function TableRow({
         imageContextMenu(event, image)
     }
 
+    console.log(columns)
+
     return (
         <tr
             className={classNames(
@@ -793,7 +795,7 @@ function TableRow({
                                                   )}
                                                   <img
                                                       src={`${image.src}?scale-down-to=512`}
-                                                      alt={image.altText}
+                                                      alt={image.alt}
                                                       className="size-full object-cover rounded-[inherit] relative"
                                                       draggable={false}
                                                   />
@@ -1000,10 +1002,6 @@ function getImages(object, level = 0) {
     const imageAssets = []
 
     if (isImageAssetOrVariable(object)) {
-        console.log(object, !!object.src, isImageAssetOrVariable(object))
-    }
-
-    if (isImageAssetOrVariable(object)) {
         imageAssets.push(object)
     } else if (Array.isArray(object)) {
         for (const item of object) {
@@ -1019,17 +1017,22 @@ function getImages(object, level = 0) {
         }
     }
 
-    return imageAssets.map(img =>
-        isImageAsset(img)
-            ? {
-                  id: img.id,
-                  src: img.url,
-              }
-            : {
-                  id: img.id ?? img.src,
-                  src: img.src,
-              }
-    )
+    return imageAssets.map(img => convertToImageObject)
+}
+
+function convertToImageObject(img) {
+    if (!img || typeof img !== "object") return null
+    return isImageAsset(img)
+        ? {
+              id: img.id,
+              src: img.url,
+              alt: img.altText,
+          }
+        : {
+              id: img.id ?? img.src,
+              src: img.src,
+              alt: img.altText ?? img.alt ?? "",
+          }
 }
 
 function isImageAssetOrVariable(imageAsset) {
