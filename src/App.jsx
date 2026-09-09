@@ -9,10 +9,12 @@ const COLUMN_COUNT = 2
 const COLUMN_WIDTH = 110
 const MAX_IMAGES_CANVAS = 100
 const NAME_COLUMN_WIDTH = 300
-const MAX_PLUGIN_WIDTH = 600
+const MAX_PLUGIN_WIDTH = 900
+const SPLIT_BUTTONS_MIN_WIDTH = 600
 const IMAGE_WIDTH = 50
-const IMAGE_GAP = 5
+const IMAGE_GAP = 8
 const COLUMN_PADDING = 20
+const MIN_COLUMN_WIDTH = IMAGE_WIDTH + COLUMN_PADDING
 const GITHUB_URL = "https://github.com/madebyisaacr/framer-save-image"
 
 export function App() {
@@ -370,7 +372,10 @@ function CollectionView() {
                                 const values = []
 
                                 for (const arrayItem of fieldData) {
-                                    values.push(arrayItem.fieldData?.[arrayField.id]?.value)
+                                    const value = arrayItem.fieldData?.[arrayField.id]?.value
+                                    if (value) {
+                                        values.push(value)
+                                    }
                                 }
 
                                 columnValues[arrayField.id] = values
@@ -426,7 +431,7 @@ function CollectionView() {
             )}
         >
             {collections.length > 1 && (
-                <div className="flex-col px-3 pb-2">
+                <div className="flex-col px-3 pb-3">
                     <select
                         value={collection?.id}
                         onChange={e => setCollection(collections.find(c => c.id === e.target.value))}
@@ -475,7 +480,7 @@ function CollectionView() {
     )
 }
 
-function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode = false }) {
+function Table({ containerRef, rows, columns, titleColumnName, splitButtons, isCollectionMode = false }) {
     const [activeSelection, setActiveSelection] = useState({ nodeId: null, imageId: null })
     const [activeImageElement, setActiveImageElement] = useState(null)
 
@@ -548,10 +553,10 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
             const baseColumnWidth =
                 effectiveImageCount > 0
                     ? Math.max(
-                          65,
+                          MIN_COLUMN_WIDTH,
                           effectiveImageCount * IMAGE_WIDTH + (effectiveImageCount - 1) * IMAGE_GAP + COLUMN_PADDING
                       )
-                    : 65 // Default to 100 if no images
+                    : MIN_COLUMN_WIDTH // Default to 100 if no images
 
             const columnWidth = baseColumnWidth + (i === columns.length - 1 ? 5 : 0)
 
@@ -559,7 +564,7 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
             totalColumnWidth += columnWidth
         }
 
-        return [Math.min(totalColumnWidth, MAX_PLUGIN_WIDTH), columnWidths]
+        return [Math.min(totalColumnWidth + 5, MAX_PLUGIN_WIDTH), columnWidths]
     }, [rows, columns])
 
     useLayoutEffect(() => {
@@ -605,7 +610,7 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
         <div ref={ref} className="overflow-y-auto overflow-x-hidden flex-col select-none relative w-full">
             <div className="flex-col w-full relative">
                 <div className="sticky top-0 h-px bg-divider mx-px" />
-                <div className="w-full overflow-x-auto">
+                <div className="w-full overflow-x-auto overscroll-none">
                     <table>
                         <thead className="h-10 text-left">
                             <tr className="relative">
@@ -616,7 +621,7 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
                                     <TableHeading
                                         key={column.id}
                                         className="px-2"
-                                        width={columnWidths[columnIndex] || 65}
+                                        width={columnWidths[columnIndex] || MIN_COLUMN_WIDTH}
                                     >
                                         {column.name}
                                     </TableHeading>
@@ -655,7 +660,10 @@ function Table({ containerRef, rows, columns, titleColumnName, isCollectionMode 
                 </div>
                 <div className="flex-col gap-2 p-3 sticky bottom-0 bg-primary">
                     <div className="absolute inset-x-edge top-0 h-px bg-divider" />
-                    <ImageButtons image={activeImage} horizontal />
+                    <ImageButtons
+                        image={activeImage}
+                        variant={pluginWidth >= SPLIT_BUTTONS_MIN_WIDTH ? "split" : "horizontal"}
+                    />
                 </div>
             </div>
         </div>
@@ -730,15 +738,15 @@ function TableRow({
         <tr
             className={classNames(
                 "text-secondary group hover:text-primary font-medium px-3 relative",
-                includesActiveImage && "bg-[#FCFCFC] dark:bg-[#161616]"
+                includesActiveImage && "bg-[#FCFCFC] dark:bg-[#1b1b1b]"
             )}
         >
             <td
-                className="text-nowrap pl-3 pr-2 cursor-pointer flex-col items-start border-r border-r-divider"
+                className="text-nowrap cursor-pointer align-top border-r border-r-divider"
                 style={{ width: NAME_COLUMN_WIDTH, maxWidth: NAME_COLUMN_WIDTH }}
                 onClick={handleTitleClick}
             >
-                <div className="flex-row gap-2.5 items-center overflow-hidden h-10 w-full">
+                <div className="flex-row gap-2.5 items-center overflow-hidden min-h-10 w-full pl-3 pr-2">
                     <span className={classNames("truncate", includesActiveImage && "text-primary")} title={row.title}>
                         {row.title}
                     </span>
@@ -754,14 +762,11 @@ function TableRow({
                     )}
                 >
                     <div
-                        className={classNames(
-                            "flex-row gap-1 flex-wrap py-2",
-                            columnIndex === columns.length - 1 ? "pl-2 pr-3" : "px-2"
-                        )}
+                        className="flex-row gap-1.5 flex-wrap p-2"
                         style={{
-                            width: columnWidths[columnIndex] || 65,
-                            minWidth: columnWidths[columnIndex] || 65,
-                            maxWidth: columnWidths[columnIndex] || 65,
+                            width: columnWidths[columnIndex] || MIN_COLUMN_WIDTH,
+                            minWidth: columnWidths[columnIndex] || MIN_COLUMN_WIDTH,
+                            maxWidth: columnWidths[columnIndex] || MIN_COLUMN_WIDTH,
                         }}
                     >
                         {Array.isArray(row.columns?.[column.id])
@@ -775,7 +780,7 @@ function TableRow({
                                       }
                                       onContextMenu={event => onContextMenu(event, column.id, index)}
                                   >
-                                      <div className="w-full h-[30px] relative rounded-sm bg-secondary transition-transform">
+                                      <div className="w-full h-[30px] relative rounded-sm bg-tertiary transition-transform">
                                           {image && (
                                               <>
                                                   <Checkerboard halfScale />
@@ -804,12 +809,14 @@ function TableRow({
     )
 }
 
-function ImageButtons({ image, horizontal = false, onButtonClick = null }) {
+function ImageButtons({ image, variant = "small", onButtonClick = null }) {
     const [isDownloading, setIsDownloading] = useState(false)
     const [isCopying, setIsCopying] = useState(false)
     const [isCopyingUrl, setIsCopyingUrl] = useState(false)
 
     const hasImage = image ? true : false
+    const horizontal = variant !== "small"
+    const split = variant === "split"
 
     async function onCopyImageClick() {
         if (!image) return
@@ -853,15 +860,19 @@ function ImageButtons({ image, horizontal = false, onButtonClick = null }) {
                 !hasImage && "opacity-50 pointer-events-none"
             )}
         >
-            <div className={classNames("gap-2 flex-1", horizontal ? "contents" : "flex-row")}>
-                <button onClick={onCopyImageClick} className="flex-1">
+            <div className={classNames("gap-2", horizontal ? "contents" : "flex-row")}>
+                <button onClick={onCopyImageClick} className={split ? "w-[132px]" : "flex-1"}>
                     {isCopying ? <Spinner /> : "Copy Image"}
                 </button>
-                <button onClick={onCopyImageUrlClick} className="flex-1">
+                <button onClick={onCopyImageUrlClick} className={split ? "w-[132px]" : "flex-1"}>
                     {isCopyingUrl ? <Spinner /> : "Copy URL"}
                 </button>
             </div>
-            <button onClick={onDownloadImageClick} className="framer-button-primary flex-1 min-h-[30px]">
+            {variant === "split" ? <div className="flex-1" /> : null}
+            <button
+                onClick={onDownloadImageClick}
+                className={classNames("framer-button-primary min-h-[30px]", split ? "w-[132px]" : "flex-1")}
+            >
                 {isDownloading ? <Spinner /> : "Download"}
             </button>
         </div>
