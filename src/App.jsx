@@ -52,7 +52,7 @@ function CanvasView() {
     const { images, imageLayerIds } = useMemo(() => {
         if (framer.mode === "editImage") {
             return {
-                images: image ? [image] : [],
+                images: image ? [convertToImageObject(image)] : [],
                 imageLayerIds: {},
             }
         } else {
@@ -98,7 +98,7 @@ function CanvasView() {
                     if (!seen.has(key) && !seen.has(img.src)) {
                         seen.add(key)
                         seen.add(img.src)
-                        uniqueImages.push(img)
+                        uniqueImages.push(convertToImageObject(img))
 
                         // Convert Set to Array for the final object
                         if (img.id && layerIdsMap.has(img.id)) {
@@ -450,7 +450,7 @@ function CollectionView() {
                     x: event.clientX ?? rect.left,
                     y: rect.top + rect.height + 2,
                 },
-                placement: "bottom"
+                placement: "bottom",
             }
         )
     }
@@ -1093,7 +1093,7 @@ function getImages(object, level = 0) {
         }
     }
 
-    return imageAssets.map(img => convertToImageObject)
+    return imageAssets.map(convertToImageObject)
 }
 
 function convertToImageObject(img) {
@@ -1121,7 +1121,11 @@ function isImageAssetOrVariable(imageAsset) {
 }
 
 function addScaleDownToURL(url) {
-    const parsed = new URL(url)
-    parsed.searchParams.set("scale-down-to", "512")
-    return parsed.toString()
+    try {
+        const parsed = new URL(url)
+        parsed.searchParams.set("scale-down-to", "512")
+        return parsed.toString()
+    } catch {
+        return url
+    }
 }
