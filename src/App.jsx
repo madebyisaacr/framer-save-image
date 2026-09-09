@@ -274,6 +274,7 @@ function Checkerboard({ halfScale = false }) {
 
 function CollectionView() {
     const ref = useRef(null)
+    const collectionDropdownRef = useRef(null)
 
     const [collection, setCollection] = useState(null)
     const [collections, setCollections] = useState([])
@@ -424,6 +425,36 @@ function CollectionView() {
         }
     }, [isLoading, columns.length, hasAnyImages])
 
+    function onCollectionDropdownClick(event) {
+        const rect = collectionDropdownRef.current?.getBoundingClientRect()
+
+        framer.showContextMenu(
+            [
+                {
+                    label: "Select a Collection…",
+                    enabled: false,
+                },
+                ...collections
+                    .sort((a, b) => {
+                        if (a.readonly === b.readonly) return 0
+                        return a.readonly ? 1 : -1
+                    })
+                    .map(c => ({
+                        label: c.name,
+                        checked: collection.id === c.id,
+                        onAction: () => setCollection(collections.find(a => a.id === c.id)),
+                    })),
+            ],
+            {
+                location: {
+                    x: event.clientX ?? rect.left,
+                    y: rect.top + rect.height + 2,
+                },
+                placement: "bottom"
+            }
+        )
+    }
+
     return (
         <div
             ref={ref}
@@ -433,26 +464,31 @@ function CollectionView() {
             )}
         >
             {collections.length > 1 && (
-                <div className="flex-col px-3 pb-2">
-                    <select
-                        value={collection?.id}
-                        onChange={e => setCollection(collections.find(c => c.id === e.target.value))}
-                        className="w-full pl-2"
+                <div className="flex-col px-3 pb-2 relative">
+                    <div
+                        ref={collectionDropdownRef}
+                        className="w-full px-2 bg-control rounded h-6 flex-row items-center gap-1.5 cursor-pointer"
+                        onClick={onCollectionDropdownClick}
                     >
-                        <option value="" disabled>
-                            Select a collection...
-                        </option>
-                        {[...collections]
-                            .sort((a, b) => {
-                                if (a.readonly === b.readonly) return 0
-                                return a.readonly ? 1 : -1
-                            })
-                            .map(collection => (
-                                <option key={collection.id} value={collection.id}>
-                                    {collection.name}
-                                </option>
-                            ))}
-                    </select>
+                        <CMSIcon />
+                        <span className="flex-1">{collection ? collection.name : "Select a Collection..."}</span>
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="8"
+                            height="8"
+                            viewBox="0 0 8 8"
+                            className="text-tertiary"
+                        >
+                            <path
+                                d="M1 2.5l3 3 3-3"
+                                fill="transparent"
+                                stroke="currentColor"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="1.5"
+                            />
+                        </svg>
+                    </div>
                 </div>
             )}
             {isLoading ? (
@@ -927,6 +963,35 @@ function ImageIcon({ className }) {
                 strokeWidth="1.5"
                 className="[vector-effect:non-scaling-stroke]"
                 d="M1.848 7.56a7 7 0 0 1 8.304 0l.598.44v.75a2 2 0 0 1-2 2h-5.5a2 2 0 0 1-2-2V8Z"
+            ></path>
+        </svg>
+    )
+}
+
+function CMSIcon({ className }) {
+    return (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="12"
+            height="12"
+            viewBox="0 0 12 12"
+            fill="none"
+            role="presentation"
+            aria-hidden="true"
+            focusable="false"
+            className={className}
+        >
+            <path
+                fill="currentColor"
+                fillOpacity="0.15"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                d="M1.5 8.75v-5.5C1.5 1.869 3.515.75 6 .75s4.5 1.119 4.5 2.5v5.5m0 0c0 1.381-2.015 2.5-4.5 2.5s-4.5-1.119-4.5-2.5"
+            ></path>
+            <path
+                fill="none"
+                stroke="currentColor"
+                d="M10.25 3.25c0 1.105-1.903 2-4.25 2s-4.25-.895-4.25-2M10.25 6c0 1.105-1.903 2-4.25 2s-4.25-.895-4.25-2"
             ></path>
         </svg>
     )

@@ -8,6 +8,7 @@ export default {
             primary: "var(--framer-color-bg)",
             secondary: "var(--framer-color-bg-secondary)",
             tertiary: "var(--framer-color-bg-tertiary)",
+            control: "var(--framer-color-control)",
             divider: "var(--framer-color-divider)",
             "divider-secondary": "var(--color-divider-secondary)",
             tint: "var(--framer-color-tint)",
