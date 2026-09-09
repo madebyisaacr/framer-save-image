@@ -9,7 +9,7 @@ const COLUMN_COUNT = 2
 const COLUMN_WIDTH = 110
 const MAX_IMAGES_CANVAS = 100
 const NAME_COLUMN_WIDTH = 300
-const MAX_PLUGIN_WIDTH = 900
+const MAX_PLUGIN_WIDTH = 1000
 const SPLIT_BUTTONS_MIN_WIDTH = 600
 const IMAGE_WIDTH = 50
 const IMAGE_GAP = 8
@@ -579,7 +579,7 @@ function Table({ containerRef, rows, columns, titleColumnName, splitButtons, isC
             framer.showUI({
                 position: "top right",
                 width: pluginWidth,
-                height: Math.max(Math.min(elementRef.current.offsetHeight, 500), 158),
+                height: Math.max(Math.min(elementRef.current.offsetHeight, 600), 158),
             })
         }
 
