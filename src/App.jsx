@@ -56,13 +56,13 @@ function CanvasView() {
                 imageLayerIds: {},
             }
         } else {
-            const allImages = []
+            const allBaseImages = []
             const layerIdsMap = new Map()
 
             for (const node of selection) {
                 if (isFrameNode(node)) {
                     if (isImageAsset(node.backgroundImage)) {
-                        allImages.push(node.backgroundImage)
+                        allBaseImages.push(node.backgroundImage)
                         const imageId = node.backgroundImage.id
                         if (imageId) {
                             if (!layerIdsMap.has(imageId)) {
@@ -74,7 +74,7 @@ function CanvasView() {
                 } else if (isComponentInstanceNode(node)) {
                     const images = getImages(node.controls)
                     for (const img of images) {
-                        allImages.push(img)
+                        allBaseImages.push(img)
                         if (img.id) {
                             if (!layerIdsMap.has(img.id)) {
                                 layerIdsMap.set(img.id, new Set())
@@ -84,6 +84,8 @@ function CanvasView() {
                     }
                 }
             }
+
+            const allImages = allBaseImages.map(convertToImageObject)
 
             const uniqueImages = []
             const imageLayerIds = {}
@@ -98,7 +100,7 @@ function CanvasView() {
                     if (!seen.has(key) && !seen.has(img.src)) {
                         seen.add(key)
                         seen.add(img.src)
-                        uniqueImages.push(convertToImageObject(img))
+                        uniqueImages.push(img)
 
                         // Convert Set to Array for the final object
                         if (img.id && layerIdsMap.has(img.id)) {
