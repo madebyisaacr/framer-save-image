@@ -6,7 +6,7 @@ export async function copyImage(image) {
 
     try {
         // Fetch the image as a blob
-        const response = await fetch(image.url)
+        const response = await fetch(image.src)
         const blob = await response.blob()
 
         // Handle SVG separately by copying as text
@@ -79,7 +79,7 @@ export async function copyImageUrlToClipboard(url) {
 export async function downloadImage(image) {
     if (!image) return
 
-    const success = await downloadFile(image.url, image.id)
+    const success = await downloadFile(image.src, image.id)
     if (success) {
         framer.notify("Image downloaded!", { variant: "success" })
     } else {
@@ -102,7 +102,7 @@ export function imageContextMenu(event, image, precedingListItems = []) {
             {
                 label: "Copy URL",
                 onAction: async () => {
-                    withLoadingNotification(copyImageUrlToClipboard(image.url), "Copying image URL...")
+                    withLoadingNotification(copyImageUrlToClipboard(image.src), "Copying image URL...")
                 },
             },
             {
