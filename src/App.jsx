@@ -609,64 +609,61 @@ function Table({ containerRef, rows, columns, titleColumnName, splitButtons, isC
     }, [activeImage])
 
     return (
-        <div ref={ref} className="overflow-y-auto overflow-x-hidden flex-col select-none relative w-full">
-            <div className="flex-col w-full relative">
-                <div className="sticky top-0 h-px bg-divider mx-px" />
-                <div className="w-full overflow-x-auto">
-                    <table>
-                        <thead className="h-10 text-left">
-                            <tr className="relative">
-                                <TableHeading className="pl-3" width={NAME_COLUMN_WIDTH}>
-                                    {titleColumnName}
+        <div ref={ref} className="relative overflow-y-auto overflow-x-hidden flex-col select-none w-full">
+            <div className="sticky top-0 h-px bg-divider mx-px" />
+            <div className="w-full overflow-x-auto">
+                <table>
+                    <thead className="h-10 text-left">
+                        <tr className="sticky top-0 bg-primary z-10">
+                            <TableHeading className="pl-3" width={NAME_COLUMN_WIDTH}>
+                                {titleColumnName}
+                            </TableHeading>
+                            {columns.map((column, columnIndex) => (
+                                <TableHeading
+                                    key={column.id}
+                                    className="px-2"
+                                    width={columnWidths[columnIndex] || MIN_COLUMN_WIDTH}
+                                >
+                                    {column.name}
                                 </TableHeading>
-                                {columns.map((column, columnIndex) => (
-                                    <TableHeading
-                                        key={column.id}
-                                        className="px-2"
-                                        width={columnWidths[columnIndex] || MIN_COLUMN_WIDTH}
-                                    >
-                                        {column.name}
-                                    </TableHeading>
-                                ))}
-                                <div className="absolute inset-x-edge bottom-0 h-px bg-divider" />
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {rows
-                                .filter(row => {
-                                    // Hide rows that don't have any images
-                                    return columns.some(column => {
-                                        const images = row.columns?.[column.id]
-                                        return (
-                                            Array.isArray(images) &&
-                                            images.some(img => img !== null && img !== undefined)
-                                        )
-                                    })
+                            ))}
+                            <div className="absolute inset-x-edge bottom-0 h-px bg-divider" />
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows
+                            .filter(row => {
+                                // Hide rows that don't have any images
+                                return columns.some(column => {
+                                    const images = row.columns?.[column.id]
+                                    return (
+                                        Array.isArray(images) && images.some(img => img !== null && img !== undefined)
+                                    )
                                 })
-                                .map((row, index, filteredArray) => (
-                                    <TableRow
-                                        key={row.id}
-                                        row={row}
-                                        itemId={row.id}
-                                        columns={columns}
-                                        columnWidths={columnWidths}
-                                        isLastRow={index === filteredArray.length - 1}
-                                        isCollectionMode={isCollectionMode}
-                                        activeImage={activeImage}
-                                        activeColumnIndex={activeSelection.columnIndex}
-                                        changeActiveImage={changeActiveImage}
-                                    />
-                                ))}
-                        </tbody>
-                    </table>
-                </div>
-                <div className="flex-col gap-2 p-3 sticky bottom-0 bg-primary">
-                    <div className="absolute inset-x-edge top-0 h-px bg-divider" />
-                    <ImageButtons
-                        image={activeImage}
-                        variant={pluginWidth >= SPLIT_BUTTONS_MIN_WIDTH ? "split" : "horizontal"}
-                    />
-                </div>
+                            })
+                            .map((row, index, filteredArray) => (
+                                <TableRow
+                                    key={row.id}
+                                    row={row}
+                                    itemId={row.id}
+                                    columns={columns}
+                                    columnWidths={columnWidths}
+                                    isLastRow={index === filteredArray.length - 1}
+                                    isCollectionMode={isCollectionMode}
+                                    activeImage={activeImage}
+                                    activeColumnIndex={activeSelection.columnIndex}
+                                    changeActiveImage={changeActiveImage}
+                                />
+                            ))}
+                    </tbody>
+                </table>
+            </div>
+            <div className="flex-col gap-2 p-3 sticky bottom-0 bg-primary">
+                <div className="absolute inset-x-edge top-0 h-px bg-divider" />
+                <ImageButtons
+                    image={activeImage}
+                    variant={pluginWidth >= SPLIT_BUTTONS_MIN_WIDTH ? "split" : "horizontal"}
+                />
             </div>
         </div>
     )
