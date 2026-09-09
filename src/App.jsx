@@ -177,7 +177,7 @@ function CanvasView() {
                         >
                             <Checkerboard />
                             <img
-                                src={`${images[0].src}?scale-down-to=512`}
+                                src={addScaleDownToURL(images[0].src)}
                                 alt={images[0].alt}
                                 className="size-full object-contain relative rounded-[inherit] max-h-[400px]"
                                 draggable={false}
@@ -251,7 +251,7 @@ function ImageItem({ image, layerIds = [], height, dimensionsLoaded = false, sel
             )}
             {dimensionsLoaded && (
                 <img
-                    src={`${image.src}?scale-down-to=512`}
+                    src={addScaleDownToURL(image.src)}
                     alt={image.alt}
                     className="w-full h-full object-contain relative rounded-[inherit]"
                     style={{ maxHeight: height, minHeight: 10 }}
@@ -791,7 +791,7 @@ function TableRow({
                                                       </div>
                                                   )}
                                                   <img
-                                                      src={`${image.src}?scale-down-to=512`}
+                                                      src={addScaleDownToURL(image.src)}
                                                       alt={image.alt}
                                                       className="size-full object-cover rounded-[inherit] relative"
                                                       draggable={false}
@@ -1039,4 +1039,10 @@ function isImageAssetOrVariable(imageAsset) {
         return true
     }
     return false
+}
+
+function addScaleDownToURL(url) {
+    const parsed = new URL(url)
+    parsed.searchParams.set("scale-down-to", "512")
+    return parsed.toString()
 }
