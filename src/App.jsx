@@ -733,8 +733,6 @@ function TableRow({
         imageContextMenu(event, image)
     }
 
-    console.log(columns)
-
     return (
         <tr
             className={classNames(
