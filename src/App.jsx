@@ -817,12 +817,30 @@ function ImageButtons({ image, variant = "small", onButtonClick = null }) {
     const horizontal = variant !== "small"
     const split = variant === "split"
 
+    async function withDelayedSpinner(setLoading, action) {
+        let spinnerShown = false
+
+        const timer = setTimeout(() => {
+            spinnerShown = true
+            setLoading(true)
+        }, 100)
+
+        try {
+            await action()
+        } finally {
+            clearTimeout(timer)
+
+            // Only reset if the spinner was actually shown.
+            if (spinnerShown) {
+                setLoading(false)
+            }
+        }
+    }
+
     async function onCopyImageClick() {
         if (!image) return
 
-        setIsCopying(true)
-        await copyImage(image)
-        setIsCopying(false)
+        await withDelayedSpinner(setIsCopying, () => copyImage(image))
 
         if (onButtonClick) {
             onButtonClick()
@@ -832,9 +850,7 @@ function ImageButtons({ image, variant = "small", onButtonClick = null }) {
     async function onCopyImageUrlClick() {
         if (!image) return
 
-        setIsCopyingUrl(true)
-        await copyImageUrlToClipboard(image.src)
-        setIsCopyingUrl(false)
+        await withDelayedSpinner(setIsCopyingUrl, () => copyImageUrlToClipboard(image.src))
 
         if (onButtonClick) {
             onButtonClick()
@@ -844,11 +860,11 @@ function ImageButtons({ image, variant = "small", onButtonClick = null }) {
     async function onDownloadImageClick() {
         if (!image) return
 
-        setIsDownloading(true)
-        await downloadImage(image)
-        setIsDownloading(false)
+        await withDelayedSpinner(setIsDownloading, () => downloadImage(image))
 
-        if (onButtonClick) onButtonClick()
+        if (onButtonClick) {
+            onButtonClick()
+        }
     }
 
     return (
